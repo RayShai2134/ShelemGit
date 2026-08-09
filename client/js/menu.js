@@ -22,10 +22,12 @@ function openProfileModal(){
   }).join('');
   openModal(
     '<h2>'+t('editProfile')+'</h2>' +
+    (isLoggedIn() ? '<p class="muted" style="margin-top:-8px;">'+t('loggedInAs', currentUser.username)+'</p>' : '') +
     '<input type="text" id="name-input" maxlength="18" value="'+profile.name.replace(/"/g,'')+'" placeholder="'+t('yourName')+'">' +
     '<p class="muted" style="margin-top:-8px;">'+t('chooseAvatar')+'</p>' +
     '<div class="avatar-grid" id="avatar-grid">'+avatarsHtml+'</div>' +
     '<div class="modal-actions">' +
+      (isLoggedIn() ? '<button id="profile-logout-btn">'+t('logOut')+'</button>' : '') +
       '<button id="profile-cancel-btn">'+t('cancel')+'</button>' +
       '<button class="primary" id="profile-save-btn">'+t('save')+'</button>' +
     '</div>'
@@ -46,42 +48,119 @@ function openProfileModal(){
     saveProfile();
     closeModal();
   };
+  var logoutBtn = document.getElementById('profile-logout-btn');
+  if(logoutBtn) logoutBtn.onclick = function(){ logout(); renderProfileBar(); closeModal(); };
 }
 
 function openFriendsModal(){
-  renderFriendsModalContent();
+  if(!isLoggedIn()){
+    openModal(
+      '<h2>'+t('friends')+'</h2>' +
+      '<p class="muted">'+t('friendsLoginPrompt')+'</p>' +
+      '<div class="modal-actions" style="justify-content:center;">' +
+        '<button class="primary" id="friends-login-btn">'+t('logInSignUp')+'</button>' +
+      '</div>'
+    );
+    document.getElementById('friends-login-btn').onclick = function(){ openAuthModal('login'); };
+    return;
+  }
+  loadAndRenderFriends();
 }
-function renderFriendsModalContent(){
-  var listHtml = profile.friends.length===0
-    ? '<p class="muted">'+t('noFriendsYet')+'</p>'
-    : '<div class="friends-list">' + profile.friends.map(function(f, i){
-        return '<div class="friend-row"><span>' + f + '</span><button data-remove="'+i+'" style="padding:4px 10px;font-size:12px;">'+t('remove')+'</button></div>';
+
+function loadAndRenderFriends(){
+  openModal('<h2>'+t('friends')+'</h2><p class="muted">'+t('loading')+'</p>');
+  apiFetch('/api/friends').then(function(data){
+    renderFriendsModalContent(data);
+  }).catch(function(e){ showToast(e.message); closeModal(); });
+}
+
+function renderFriendsModalContent(data){
+  var html = '<h2>'+t('friends')+'</h2>';
+  if(data.incoming.length>0){
+    html += '<p class="muted" style="margin-bottom:6px;">'+t('incomingRequests')+'</p><div class="friends-list">' +
+      data.incoming.map(function(f){
+        return '<div class="friend-row"><span>'+f.avatar+' '+f.displayName+' <span class="muted">@'+f.username+'</span></span>' +
+          '<span><button data-accept="'+f.friendshipId+'" style="padding:4px 10px;font-size:12px;">'+t('accept')+'</button> ' +
+          '<button data-decline="'+f.friendshipId+'" style="padding:4px 10px;font-size:12px;">'+t('decline')+'</button></span></div>';
       }).join('') + '</div>';
-  openModal(
-    '<h2>'+t('friends')+'</h2>' +
-    '<p class="muted">'+t('friendsHint')+'</p>' +
-    '<input type="text" id="friend-input" maxlength="18" placeholder="'+t('friendNamePlaceholder')+'">' +
-    listHtml +
+  }
+  html += '<p class="muted" style="margin-bottom:6px;">'+t('yourFriends')+'</p>';
+  html += data.friends.length===0
+    ? '<p class="muted">'+t('noFriendsYet')+'</p>'
+    : '<div class="friends-list">' + data.friends.map(function(f){
+        return '<div class="friend-row"><span>'+f.avatar+' '+f.displayName+' <span class="muted">@'+f.username+'</span></span>' +
+          '<button data-remove="'+f.friendshipId+'" style="padding:4px 10px;font-size:12px;">'+t('remove')+'</button></div>';
+      }).join('') + '</div>';
+  if(data.outgoing.length>0){
+    html += '<p class="muted" style="margin-bottom:6px;">'+t('outgoingRequests')+'</p><div class="friends-list">' +
+      data.outgoing.map(function(f){
+        return '<div class="friend-row"><span>'+f.avatar+' '+f.displayName+' <span class="muted">@'+f.username+'</span></span>' +
+          '<span class="muted">'+t('pending')+'</span></div>';
+      }).join('') + '</div>';
+  }
+  html += '<input type="text" id="friend-username-input" maxlength="20" placeholder="'+t('addByUsername')+'">' +
     '<div class="modal-actions">' +
       '<button id="friends-close-btn">'+t('close')+'</button>' +
       '<button class="primary" id="friend-add-btn">'+t('addFriend')+'</button>' +
-    '</div>'
-  );
+    '</div>';
+  openModal(html);
   document.getElementById('friends-close-btn').onclick = closeModal;
   document.getElementById('friend-add-btn').onclick = function(){
-    var val = document.getElementById('friend-input').value.trim();
-    if(val.length===0) return;
-    profile.friends.push(val);
-    saveProfile();
-    renderFriendsModalContent();
+    var username = document.getElementById('friend-username-input').value.trim();
+    if(username.length===0) return;
+    apiFetch('/api/friends/request', { method:'POST', body:{ username: username } })
+      .then(function(){ showToast(t('requestSent')); loadAndRenderFriends(); })
+      .catch(function(e){ showToast(e.message); });
   };
-  document.querySelectorAll('[data-remove]').forEach(function(btn){
+  document.querySelectorAll('[data-accept]').forEach(function(btn){
     btn.onclick = function(){
-      profile.friends.splice(parseInt(btn.getAttribute('data-remove'),10), 1);
-      saveProfile();
-      renderFriendsModalContent();
+      apiFetch('/api/friends/'+btn.getAttribute('data-accept')+'/accept', { method:'POST' })
+        .then(loadAndRenderFriends).catch(function(e){ showToast(e.message); });
     };
   });
+  document.querySelectorAll('[data-decline]').forEach(function(btn){
+    btn.onclick = function(){
+      apiFetch('/api/friends/'+btn.getAttribute('data-decline')+'/decline', { method:'POST' })
+        .then(loadAndRenderFriends).catch(function(e){ showToast(e.message); });
+    };
+  });
+  document.querySelectorAll('[data-remove]').forEach(function(btn){
+    btn.onclick = function(){
+      apiFetch('/api/friends/'+btn.getAttribute('data-remove'), { method:'DELETE' })
+        .then(loadAndRenderFriends).catch(function(e){ showToast(e.message); });
+    };
+  });
+}
+
+function openAuthModal(mode){
+  mode = mode || 'login';
+  var isSignup = mode==='signup';
+  openModal(
+    '<h2>'+(isSignup ? t('signUp') : t('logIn'))+'</h2>' +
+    (isSignup ? '<input type="text" id="auth-displayname" maxlength="24" placeholder="'+t('yourName')+'">' : '') +
+    (isSignup ? '<input type="text" id="auth-username" maxlength="20" placeholder="'+t('username')+'">' : '') +
+    '<input type="email" id="auth-email" placeholder="'+t('email')+'">' +
+    '<input type="password" id="auth-password" placeholder="'+t('password')+'">' +
+    '<div class="modal-actions" style="justify-content:center;">' +
+      '<button class="primary" id="auth-submit-btn">'+(isSignup ? t('signUp') : t('logIn'))+'</button>' +
+    '</div>' +
+    '<p class="muted" style="text-align:center;font-size:12.5px;">' +
+      (isSignup ? t('haveAccount') : t('needAccount')) + ' ' +
+      '<a href="#" id="auth-toggle-link">'+(isSignup ? t('logIn') : t('signUp'))+'</a>' +
+    '</p>'
+  );
+  document.getElementById('auth-toggle-link').onclick = function(e){ e.preventDefault(); openAuthModal(isSignup ? 'login' : 'signup'); };
+  document.getElementById('auth-submit-btn').onclick = function(){
+    var email = document.getElementById('auth-email').value.trim();
+    var password = document.getElementById('auth-password').value;
+    var action = isSignup
+      ? signup(email, document.getElementById('auth-username').value.trim(), password, document.getElementById('auth-displayname').value.trim())
+      : login(email, password);
+    action.then(function(){
+      showToast(t('welcomeBack'));
+      loadAndRenderFriends();
+    }).catch(function(e){ showToast(e.message); });
+  };
 }
 
 function openBuyCoinsModal(){

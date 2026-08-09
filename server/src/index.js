@@ -7,10 +7,16 @@ var RoomManager = require('./rooms/RoomManager.js');
 var ClientRegistry = require('./identity/ClientRegistry.js');
 var Room = require('./rooms/Room.js');
 var MatchmakingQueue = require('./matchmaking/MatchmakingQueue.js');
+var authRoutes = require('./auth/authRoutes.js');
+var friendsRoutes = require('./friends/friendsRoutes.js');
 
 var app = express();
 var server = http.createServer(app);
 var io = new Server(server, { cors: { origin: '*' } });
+
+app.use(express.json());
+app.use('/api', authRoutes);
+app.use('/api/friends', friendsRoutes);
 
 var CLIENT_DIR = path.join(__dirname, '..', '..', 'client');
 var SHARED_DIR = path.join(__dirname, '..', '..', 'shared');

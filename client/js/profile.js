@@ -4,7 +4,7 @@
  */
 var AVATAR_OPTIONS = ['🦁','🐯','🦅','🐺','🦊','🐻','🐨','🦉','🐸','🦋'];
 
-var profile = { name:'Player', avatarIndex:0, coins:500, friends:[], targetScore:500, language:'en' };
+var profile = { name:'Player', avatarIndex:0, coins:500, targetScore:500, language:'en' };
 var gameStarted = false;
 
 function loadProfile(){
@@ -15,7 +15,6 @@ function loadProfile(){
       profile.name = loaded.name || profile.name;
       profile.avatarIndex = typeof loaded.avatarIndex==='number' ? loaded.avatarIndex : 0;
       profile.coins = typeof loaded.coins==='number' ? loaded.coins : 500;
-      profile.friends = Array.isArray(loaded.friends) ? loaded.friends : [];
       profile.targetScore = typeof loaded.targetScore==='number' ? loaded.targetScore : 500;
       profile.language = (loaded.language==='fa') ? 'fa' : 'en';
     }
@@ -28,12 +27,19 @@ function saveProfile(){
   try{
     localStorage.setItem('shelemProfile', JSON.stringify(profile));
   }catch(e){}
+  if(typeof syncProfileToAccount==='function') syncProfileToAccount();
 }
 
 function renderProfileBar(){
   document.getElementById('profile-avatar-circle').textContent = AVATAR_OPTIONS[profile.avatarIndex];
   document.getElementById('profile-name-label').textContent = profile.name;
   document.getElementById('coin-count').textContent = profile.coins;
+  var subtextEl = document.getElementById('profile-subtext');
+  if(subtextEl){
+    var loggedIn = typeof isLoggedIn==='function' && isLoggedIn();
+    if(loggedIn) subtextEl.textContent = '@' + currentUser.username;
+    else if(typeof t==='function') subtextEl.textContent = t('tapToEdit');
+  }
 }
 
 /* Persistent per-browser identity used later for multiplayer (matchmaking, room

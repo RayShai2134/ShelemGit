@@ -14,8 +14,7 @@ var STRINGS = {
     showLog: 'Show game log', hideLog: 'Hide game log',
     editProfile: 'Edit profile', yourName: 'Your name', chooseAvatar: 'Choose an avatar', cancel: 'Cancel', save: 'Save',
     friends: 'Friends', noFriendsYet: 'No friends added yet.',
-    friendsHint: 'Add a friend by name for now — online play with friends is coming once multiplayer is ready.',
-    friendNamePlaceholder: 'Friend\'s name', close: 'Close', addFriend: 'Add friend', remove: 'Remove',
+    close: 'Close', addFriend: 'Add friend', remove: 'Remove',
     buyCoins: 'Buy coins', buyCoinsBody: 'The coin shop isn\'t connected to a payment system yet — this is just a placeholder for now.',
     gotIt: 'Got it', settings: 'Settings', settingsTargetLabel: 'Winning target score (for new games)',
     settingsCustomPlaceholder: 'Custom target (multiple of 5)',
@@ -70,7 +69,15 @@ var STRINGS = {
     logDiscards: function(name){ return name + ' discards 4 cards from the widow'; },
     findingPlayers: 'Finding players… this may take up to 20 seconds.',
     matchStarting: 'Match found — starting…',
-    teamA: 'Team A', teamB: 'Team B', tapToSit: 'Tap a seat to change teams'
+    teamA: 'Team A', teamB: 'Team B', tapToSit: 'Tap a seat to change teams',
+    friendsLoginPrompt: 'Sign in with a real account to add friends, and to save your name, avatar, and coins across devices.',
+    logInSignUp: 'Log in / Sign up', loading: 'Loading…',
+    incomingRequests: 'Friend requests', yourFriends: 'Your friends', outgoingRequests: 'Sent requests',
+    pending: 'Pending', addByUsername: "Add by username", requestSent: 'Friend request sent.',
+    accept: 'Accept', decline: 'Decline',
+    signUp: 'Sign up', logIn: 'Log in', username: 'Username', email: 'Email', password: 'Password',
+    haveAccount: 'Already have an account?', needAccount: "Don't have an account?",
+    welcomeBack: 'Welcome!', logOut: 'Log out', loggedInAs: function(u){ return 'Signed in as @'+u; }
   },
   fa: {
     appSubtitle: 'یک بازی ورق ایرانی',
@@ -82,8 +89,7 @@ var STRINGS = {
     showLog: 'نمایش گزارش بازی', hideLog: 'پنهان کردن گزارش',
     editProfile: 'ویرایش پروفایل', yourName: 'نام شما', chooseAvatar: 'یک آواتار انتخاب کنید', cancel: 'انصراف', save: 'ذخیره',
     friends: 'دوستان', noFriendsYet: 'هنوز دوستی اضافه نشده.',
-    friendsHint: 'فعلاً می‌توانید با نام دوستتان را اضافه کنید — بازی آنلاین با دوستان به‌زودی فعال می‌شود.',
-    friendNamePlaceholder: 'نام دوست', close: 'بستن', addFriend: 'افزودن دوست', remove: 'حذف',
+    close: 'بستن', addFriend: 'افزودن دوست', remove: 'حذف',
     buyCoins: 'خرید سکه', buyCoinsBody: 'فروشگاه سکه هنوز به سیستم پرداخت وصل نشده — این فقط یک جای‌نگه‌دار است.',
     gotIt: 'متوجه شدم', settings: 'تنظیمات', settingsTargetLabel: 'امتیاز هدف برد (برای بازی‌های جدید)',
     settingsCustomPlaceholder: 'عدد دلخواه (مضرب ۵)',
@@ -138,7 +144,15 @@ var STRINGS = {
     logDiscards: function(name){ return name + ' چهار کارت از حکم وسط دور ریخت'; },
     findingPlayers: 'در حال یافتن بازیکن… ممکن است تا ۲۰ ثانیه طول بکشد.',
     matchStarting: 'بازی پیدا شد — در حال شروع…',
-    teamA: 'تیم آ', teamB: 'تیم ب', tapToSit: 'برای تغییر تیم روی یک صندلی بزنید'
+    teamA: 'تیم آ', teamB: 'تیم ب', tapToSit: 'برای تغییر تیم روی یک صندلی بزنید',
+    friendsLoginPrompt: 'برای افزودن دوست و ذخیره نام، آواتار و سکه‌هایتان در همه دستگاه‌ها، با یک حساب واقعی وارد شوید.',
+    logInSignUp: 'ورود / ثبت‌نام', loading: 'در حال بارگذاری…',
+    incomingRequests: 'درخواست‌های دوستی', yourFriends: 'دوستان شما', outgoingRequests: 'درخواست‌های ارسالی',
+    pending: 'در انتظار', addByUsername: 'افزودن با نام کاربری', requestSent: 'درخواست دوستی ارسال شد.',
+    accept: 'پذیرفتن', decline: 'رد کردن',
+    signUp: 'ثبت‌نام', logIn: 'ورود', username: 'نام کاربری', email: 'ایمیل', password: 'رمز عبور',
+    haveAccount: 'قبلاً حساب دارید؟', needAccount: 'حساب ندارید؟',
+    welcomeBack: 'خوش آمدید!', logOut: 'خروج', loggedInAs: function(u){ return 'وارد شده به‌عنوان @'+u; }
   }
 };
 
@@ -168,3 +182,4 @@ function applyStaticTranslations(){
  * language by this point, so applying translations here reflects it from
  * the very first paint instead of only after a manual language switch. */
 applyStaticTranslations();
+if(typeof renderProfileBar==='function') renderProfileBar(); // profile-subtext has no data-i18n (login-state-aware), needs its own refresh
