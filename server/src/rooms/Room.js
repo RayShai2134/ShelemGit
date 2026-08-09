@@ -42,11 +42,28 @@ Room.prototype.isEmpty = function(){
   return this.seats.every(function(s){ return !s; });
 };
 
-Room.prototype.addHuman = function(clientId, name, socketId){
+Room.prototype.addHuman = function(clientId, name, socketId, avatar){
   var seatIdx = this.emptySeatIndex();
   if(seatIdx===-1) throw new Error('room is full');
-  this.seats[seatIdx] = { type: 'human', clientId: clientId, name: name, socketId: socketId, connected: true };
+  this.seats[seatIdx] = { type: 'human', clientId: clientId, name: name, socketId: socketId, connected: true, avatar: avatar || '🙂' };
   return seatIdx;
+};
+
+/* Lets a player move to a different seat (and thus a different team, since
+ * teams are fixed by seat parity) before the game starts — swaps with
+ * whoever/whatever was in the target seat. Only meaningful pre-game.
+ */
+Room.prototype.chooseSeat = function(currentSeat, targetSeat){
+  if(this.roomPhase!==ROOM_PHASES.WAITING) throw new Error('game already started');
+  if(typeof targetSeat!=='number' || targetSeat<0 || targetSeat>3) throw new Error('invalid seat');
+  if(targetSeat===currentSeat) return null;
+  var mover = this.seats[currentSeat];
+  var occupant = this.seats[targetSeat];
+  this.seats[targetSeat] = mover;
+  this.seats[currentSeat] = occupant;
+  if(this.hostSeat===currentSeat) this.hostSeat = targetSeat;
+  else if(this.hostSeat===targetSeat) this.hostSeat = currentSeat;
+  return { movedFrom: currentSeat, movedTo: targetSeat, displaced: occupant };
 };
 
 Room.prototype.markDisconnected = function(seat){
@@ -58,7 +75,7 @@ Room.prototype.fillWithBots = function(requestingSeat){
   if(requestingSeat!==this.hostSeat) throw new Error('only the host can fill with bots');
   for(var i=0;i<4;i++){
     if(!this.seats[i]){
-      this.seats[i] = { type: 'bot', clientId: null, name: nextBotName(), socketId: null, connected: true };
+      this.seats[i] = { type: 'bot', clientId: null, name: nextBotName(), socketId: null, connected: true, avatar: '🤖' };
     }
   }
 };
@@ -138,7 +155,7 @@ Room.prototype.roomUpdatePayload = function(){
     hostSeat: this.hostSeat,
     matchmaking: this.isMatchmade,
     seats: this.seats.map(function(s){
-      return s ? { name: s.name, type: s.type, connected: s.connected } : null;
+      return s ? { name: s.name, type: s.type, connected: s.connected, avatar: s.avatar } : null;
     })
   };
 };
@@ -151,10 +168,12 @@ Room.prototype.broadcastState = function(){
   var self = this;
   if(!this.game) return;
   var players = this.seats.map(function(s){ return s ? s.name : ''; });
+  var avatars = this.seats.map(function(s){ return s ? (s.avatar || '🤖') : ''; });
   this.seats.forEach(function(seat, idx){
     if(seat && seat.type==='human' && seat.connected){
       var payload = buildStateForSeat(self.game, idx);
       payload.players = players;
+      payload.avatars = avatars;
       self.io.to(seat.socketId).emit('state', payload);
     }
   });

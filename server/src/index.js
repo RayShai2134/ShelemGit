@@ -25,16 +25,21 @@ io.on('connection', function(socket){
   var auth = socket.handshake.auth || {};
   var clientId = auth.clientId || socket.id;
   var defaultName = (auth.name || 'Player').toString().slice(0, 24);
+  var defaultAvatar = (auth.avatar || '🙂').toString().slice(0, 8);
 
   function nameFrom(payload){
     var n = (payload && payload.name) ? payload.name.toString().trim().slice(0, 24) : '';
     return n.length>0 ? n : defaultName;
   }
+  function avatarFrom(payload){
+    var a = (payload && payload.avatar) ? payload.avatar.toString().slice(0, 8) : '';
+    return a.length>0 ? a : defaultAvatar;
+  }
 
   socket.on('createRoom', function(payload){
     var name = nameFrom(payload);
     var room = roomManager.createRoom();
-    var seat = room.addHuman(clientId, name, socket.id);
+    var seat = room.addHuman(clientId, name, socket.id, avatarFrom(payload));
     registry.bind(socket.id, clientId, name, room.code, seat);
     socket.join(room.channel());
     socket.emit('roomCreated', { roomCode: room.code, seat: seat });
@@ -48,7 +53,7 @@ io.on('connection', function(socket){
     if(!room){ socket.emit('joinError', { message: 'Room not found.' }); return; }
     if(room.roomPhase!==Room.PHASES.WAITING){ socket.emit('joinError', { message: 'That game has already started.' }); return; }
     var seat;
-    try{ seat = room.addHuman(clientId, name, socket.id); }
+    try{ seat = room.addHuman(clientId, name, socket.id, avatarFrom(payload)); }
     catch(e){ socket.emit('joinError', { message: e.message }); return; }
     registry.bind(socket.id, clientId, name, room.code, seat);
     socket.join(room.channel());
@@ -57,8 +62,32 @@ io.on('connection', function(socket){
   });
 
   socket.on('joinMatchmaking', function(payload){
-    var name = nameFrom(payload);
-    matchmakingQueue.join(clientId, name, socket.id);
+    matchmakingQueue.join(clientId, nameFrom(payload), socket.id, avatarFrom(payload));
+  });
+
+  socket.on('chooseSeat', function(payload){
+    var entry = registry.get(socket.id);
+    if(!entry) return;
+    var room = roomManager.get(entry.roomCode);
+    if(!room) return;
+    try{
+      var result = room.chooseSeat(entry.seat, payload && payload.targetSeat);
+      if(result){
+        registry.bind(socket.id, entry.clientId, entry.name, room.code, result.movedTo);
+        socket.emit('seatChanged', { seat: result.movedTo });
+        if(result.displaced && result.displaced.type==='human' && result.displaced.socketId){
+          var displacedEntry = registry.get(result.displaced.socketId);
+          if(displacedEntry){
+            registry.bind(result.displaced.socketId, displacedEntry.clientId, displacedEntry.name, room.code, result.movedFrom);
+          }
+          var displacedSocket = io.sockets.sockets.get(result.displaced.socketId);
+          if(displacedSocket) displacedSocket.emit('seatChanged', { seat: result.movedFrom });
+        }
+        room.broadcastRoomUpdate();
+      }
+    }catch(e){
+      socket.emit('actionError', { message: e.message });
+    }
   });
 
   socket.on('leaveMatchmaking', function(){

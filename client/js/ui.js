@@ -24,6 +24,13 @@ function displayName(view, seat){
   return SEAT_NAMES()[relSeat(seat)];
 }
 
+/* Real chosen avatar emoji for online games (server-supplied via
+ * view.avatars); offline bots just get a generic robot. */
+function displayAvatar(view, seat){
+  if(view.avatars && view.avatars[seat]) return view.avatars[seat];
+  return '🤖';
+}
+
 function log(msg){
   logEntries.push(msg);
   if(logEntries.length>200) logEntries.shift();
@@ -48,7 +55,7 @@ function applyFanLayout(containerEl){
   var n = cards.length;
   if(n===0) return;
   var containerWidth = containerEl.clientWidth || 480;
-  var cardWidth = 46;
+  var cardWidth = cards[0].offsetWidth || 46;
   var maxSpacing = cardWidth * 0.4;
   var spacing = n>1 ? Math.max(9, Math.min(maxSpacing, (containerWidth-cardWidth)/(n-1))) : 0;
   var maxAngle = Math.min(20, n*1.7);
@@ -143,6 +150,7 @@ function render(){
                  (view.phase===PHASES.DISCARDING && view.declarer===seat);
     info.className = 'seat-info' + (active ? ' active' : '');
     document.getElementById('seat'+pos+'-name').textContent = displayName(view, seat);
+    document.getElementById('seat'+pos+'-avatar').textContent = displayAvatar(view, seat);
     var subText = '';
     if(view.declarer===seat) subText = t('declarerLabel');
     if(view.phase===PHASES.BIDDING && view.passedSeats[seat]) subText = t('passedLabel');

@@ -17,9 +17,9 @@ function MatchmakingQueue(roomManager, registry, io){
   this.timer = null;
 }
 
-MatchmakingQueue.prototype.join = function(clientId, name, socketId){
+MatchmakingQueue.prototype.join = function(clientId, name, socketId, avatar){
   this.leave(socketId); // guard against double-join from the same socket
-  this.waiting.push({ clientId: clientId, name: name, socketId: socketId });
+  this.waiting.push({ clientId: clientId, name: name, socketId: socketId, avatar: avatar });
   if(this.waiting.length===1){
     var self = this;
     this.timer = setTimeout(function(){ self._popAndStart(true); }, TIMEOUT_MS);
@@ -47,7 +47,7 @@ MatchmakingQueue.prototype._popAndStart = function(fillRestWithBots){
   room.isMatchmade = true;
   var self = this;
   group.forEach(function(entry){
-    var seat = room.addHuman(entry.clientId, entry.name, entry.socketId);
+    var seat = room.addHuman(entry.clientId, entry.name, entry.socketId, entry.avatar);
     self.registry.bind(entry.socketId, entry.clientId, entry.name, room.code, seat);
     var socket = self.io.sockets.sockets.get(entry.socketId);
     if(socket){

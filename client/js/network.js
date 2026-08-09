@@ -14,19 +14,22 @@ var Network = (function(){
     (handlers[event] || []).forEach(function(cb){ cb(payload); });
   }
 
+  function myAvatar(){ return AVATAR_OPTIONS[profile.avatarIndex]; }
+
   function connect(){
     if(socket) return socket;
-    socket = io({ auth: { clientId: getClientId(), name: profile.name } });
-    ['roomCreated','roomJoined','joinError','roomUpdate','state','actionError','connect','disconnect'].forEach(function(evt){
+    socket = io({ auth: { clientId: getClientId(), name: profile.name, avatar: myAvatar() } });
+    ['roomCreated','roomJoined','joinError','roomUpdate','state','actionError','seatChanged','connect','disconnect'].forEach(function(evt){
       socket.on(evt, function(payload){ fire(evt, payload); });
     });
     return socket;
   }
 
-  function createRoom(){ connect(); socket.emit('createRoom', { name: profile.name }); }
-  function joinRoom(code){ connect(); socket.emit('joinRoom', { roomCode: code, name: profile.name }); }
-  function joinMatchmaking(){ connect(); socket.emit('joinMatchmaking', { name: profile.name }); }
+  function createRoom(){ connect(); socket.emit('createRoom', { name: profile.name, avatar: myAvatar() }); }
+  function joinRoom(code){ connect(); socket.emit('joinRoom', { roomCode: code, name: profile.name, avatar: myAvatar() }); }
+  function joinMatchmaking(){ connect(); socket.emit('joinMatchmaking', { name: profile.name, avatar: myAvatar() }); }
   function leaveMatchmaking(){ socket && socket.emit('leaveMatchmaking'); }
+  function chooseSeat(targetSeat){ socket && socket.emit('chooseSeat', { targetSeat: targetSeat }); }
   function startGame(targetScore){ socket && socket.emit('startGame', { targetScore: targetScore }); }
   function fillWithBots(){ socket && socket.emit('fillWithBots'); }
   function sendAction(action){ socket && socket.emit('action', action); }
@@ -35,7 +38,7 @@ var Network = (function(){
 
   return {
     on: on, connect: connect, createRoom: createRoom, joinRoom: joinRoom,
-    joinMatchmaking: joinMatchmaking, leaveMatchmaking: leaveMatchmaking,
+    joinMatchmaking: joinMatchmaking, leaveMatchmaking: leaveMatchmaking, chooseSeat: chooseSeat,
     startGame: startGame, fillWithBots: fillWithBots, sendAction: sendAction,
     leaveRoom: leaveRoom, disconnect: disconnectSocket
   };

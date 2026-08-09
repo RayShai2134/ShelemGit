@@ -69,7 +69,8 @@ var STRINGS = {
     logPasses: function(name){ return name + ' passes'; },
     logDiscards: function(name){ return name + ' discards 4 cards from the widow'; },
     findingPlayers: 'Finding players… this may take up to 20 seconds.',
-    matchStarting: 'Match found — starting…'
+    matchStarting: 'Match found — starting…',
+    teamA: 'Team A', teamB: 'Team B', tapToSit: 'Tap a seat to change teams'
   },
   fa: {
     appSubtitle: 'یک بازی ورق ایرانی',
@@ -136,7 +137,8 @@ var STRINGS = {
     logPasses: function(name){ return name + ' پاس داد'; },
     logDiscards: function(name){ return name + ' چهار کارت از حکم وسط دور ریخت'; },
     findingPlayers: 'در حال یافتن بازیکن… ممکن است تا ۲۰ ثانیه طول بکشد.',
-    matchStarting: 'بازی پیدا شد — در حال شروع…'
+    matchStarting: 'بازی پیدا شد — در حال شروع…',
+    teamA: 'تیم آ', teamB: 'تیم ب', tapToSit: 'برای تغییر تیم روی یک صندلی بزنید'
   }
 };
 

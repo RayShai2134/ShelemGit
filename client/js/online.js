@@ -90,15 +90,46 @@ function renderWaitingRoom(payload){
   document.getElementById('wr-room-code').textContent = payload.roomCode;
   var list = document.getElementById('wr-seat-list');
   list.innerHTML = '';
-  payload.seats.forEach(function(s, i){
-    var row = document.createElement('div');
-    row.className = 'seat-slot-row' + (s ? '' : ' empty');
-    var label = s ? (s.name + (s.connected ? '' : t('disconnectedTag'))) : t('emptySeat');
-    if(s && s.type==='bot') label += t('botTag');
-    if(!payload.matchmaking && i===payload.hostSeat && s) label += t('hostTag');
-    row.textContent = label;
-    list.appendChild(row);
+  var canChooseSeat = !payload.matchmaking && payload.roomPhase==='waiting';
+  [0,1].forEach(function(teamIdx){
+    var col = document.createElement('div');
+    col.className = 'team-column';
+    var label = document.createElement('div');
+    label.className = 'team-column-label';
+    label.textContent = teamIdx===0 ? t('teamA') : t('teamB');
+    col.appendChild(label);
+    [teamIdx, teamIdx+2].forEach(function(seatIdx){
+      var s = payload.seats[seatIdx];
+      var row = document.createElement('div');
+      row.className = 'seat-slot-row' + (s ? '' : ' empty') + (seatIdx===mySeat ? ' me' : '');
+      var avatarSpan = document.createElement('span');
+      avatarSpan.className = 'slot-avatar';
+      avatarSpan.textContent = s ? (s.avatar || '🤖') : '·';
+      var textSpan = document.createElement('span');
+      var labelText = s ? (s.name + (s.connected ? '' : t('disconnectedTag'))) : t('emptySeat');
+      if(s && s.type==='bot') labelText += t('botTag');
+      if(!payload.matchmaking && seatIdx===payload.hostSeat && s) labelText += t('hostTag');
+      textSpan.textContent = labelText;
+      row.appendChild(avatarSpan);
+      row.appendChild(textSpan);
+      if(canChooseSeat && seatIdx!==mySeat){
+        row.classList.add('clickable');
+        row.onclick = function(){ Network.chooseSeat(seatIdx); };
+      }
+      col.appendChild(row);
+    });
+    list.appendChild(col);
   });
+  var existingHint = document.getElementById('wr-tap-hint');
+  if(existingHint) existingHint.remove();
+  if(canChooseSeat){
+    var hint = document.createElement('p');
+    hint.id = 'wr-tap-hint';
+    hint.className = 'muted';
+    hint.style.cssText = 'text-align:center;font-size:12px;margin:0 0 4px;';
+    hint.textContent = t('tapToSit');
+    list.parentNode.insertBefore(hint, list);
+  }
   var hostControls = document.getElementById('wr-host-controls');
   hostControls.innerHTML = '';
   if(payload.matchmaking){
@@ -137,6 +168,9 @@ Network.on('roomJoined', function(payload){
   enterOnlineMode(payload.seat);
   closeModal();
   showScreen('waiting-room-screen');
+});
+Network.on('seatChanged', function(payload){
+  mySeat = payload.seat;
 });
 Network.on('joinError', function(payload){
   showToast(payload.message);
