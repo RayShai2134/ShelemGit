@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shelem</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div id="menu-screen">
+  <div class="menu-topbar">
+    <div class="menu-profile" id="menu-profile-btn">
+      <div class="avatar-circle" id="profile-avatar-circle">🦁</div>
+      <div class="menu-profile-info">
+        <div class="menu-profile-name" id="profile-name-label">Player</div>
+        <div class="menu-subtext" data-i18n="tapToEdit">Tap to edit</div>
+      </div>
+    </div>
+    <button class="icon-btn" id="friends-btn" title="Friends" aria-label="Friends">👥</button>
+  </div>
+
+  <div class="menu-topbar right">
+    <div class="coin-pill">
+      <span class="coin-icon">🪙</span>
+      <span id="coin-count">500</span>
+    </div>
+    <button class="icon-btn round-plus" id="buy-coins-btn" title="Buy coins" aria-label="Buy coins">+</button>
+  </div>
+
+  <div class="menu-center">
+    <div class="menu-title">شلم<br><span>Shelem</span></div>
+    <div class="menu-subtitle" data-i18n="appSubtitle">A Persian card game platform</div>
+
+    <div class="menu-options">
+      <button class="menu-option" id="play-online-btn">
+        <span class="menu-option-icon">🌐</span>
+        <span class="menu-option-label" data-i18n="playOnline">Play online</span>
+        <span class="menu-option-sub" data-i18n="comingSoon">Coming soon</span>
+      </button>
+      <button class="menu-option" id="play-friends-btn">
+        <span class="menu-option-icon">🧑‍🤝‍🧑</span>
+        <span class="menu-option-label" data-i18n="playFriends">Play vs friends</span>
+        <span class="menu-option-sub" data-i18n="comingSoon">Coming soon</span>
+      </button>
+      <button class="menu-option primary" id="play-bots-btn">
+        <span class="menu-option-icon">🤖</span>
+        <span class="menu-option-label" data-i18n="playBots">Play vs bots</span>
+        <span class="menu-option-sub" data-i18n="readyToPlay">Ready to play</span>
+      </button>
+    </div>
+  </div>
+
+  <button class="icon-btn corner-btn bottom-left" id="how-to-play-btn" title="How to play" aria-label="How to play">?</button>
+  <button class="icon-btn corner-btn bottom-right" id="settings-btn" title="Settings" aria-label="Settings">⚙</button>
+</div>
+
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal-box" id="modal-box"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div id="waiting-room-screen" style="display:none;">
+  <div class="waiting-room">
+    <h2 style="text-align:center;color:var(--gold-bright);font-family:'Vazirmatn',sans-serif;" data-i18n="roomCodeLabel">Room code</h2>
+    <div class="room-code-display" id="wr-room-code">----</div>
+    <div class="seat-slot-list" id="wr-seat-list"></div>
+    <div id="wr-host-controls"></div>
+    <div class="modal-actions" style="justify-content:center;margin-top:10px;">
+      <button id="wr-leave-btn" data-i18n="leaveRoomBtn">Leave room</button>
+    </div>
+  </div>
+</div>
+
+<div id="game-screen" style="display:none;">
+<div class="wrap">
+  <div class="header">
+    <button class="header-btn" id="back-to-menu-btn" style="margin-right:4px;" data-i18n="menuBack">&larr; Menu</button>
+    <div class="title">شلم &nbsp;Shelem</div>
+    <div class="scores">
+      <div class="score-block">
+        <div class="score-label" data-i18n="youPartner">You & partner</div>
+        <div class="score-val" id="score0">0</div>
+      </div>
+      <div class="score-block">
+        <div class="score-label" data-i18n="opponents">Opponents</div>
+        <div class="score-val" id="score1">0</div>
+      </div>
+      <div class="score-block">
+        <div class="score-label" data-i18n="target">Target</div>
+        <div class="score-val target" id="target">500</div>
+      </div>
+    </div>
+    <button class="header-btn" id="settings-toggle-btn" data-i18n="options">Options</button>
+  </div>
+
+  <div class="settings-panel" id="settings-panel">
+    <div class="setting-row">
+      <span class="setting-label" data-i18n="sortHand">Sort your hand</span>
+      <div class="segmented">
+        <button class="seg-btn active" id="sort-asc-btn" data-i18n="weakToStrong">Weak &rarr; strong</button>
+        <button class="seg-btn" id="sort-desc-btn" data-i18n="strongToWeak">Strong &rarr; weak</button>
+      </div>
+    </div>
+    <div class="setting-row" style="margin-top:10px;">
+      <span class="setting-label" data-i18n="turnDirection">Turn direction</span>
+      <div class="segmented">
+        <button class="seg-btn active" id="dir-cw-btn" data-i18n="clockwise">Clockwise</button>
+        <button class="seg-btn" id="dir-ccw-btn" data-i18n="counterclockwise">Counterclockwise</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-frame">
+    <div class="board">
+      <div class="bid-status-box" id="bid-status-box">
+        <div id="bid-info"></div>
+      </div>
+      <div class="seat-row">
+        <div class="seat-info" id="seat2-info">
+          <div class="avatar team0" id="seat2-avatar">P</div>
+          <div class="seat-name" id="seat2-name" data-i18n="partnerLabel">Partner</div>
+          <div class="seat-sub" id="seat2-sub"></div>
+          <div class="cardback-count" id="seat2-cards"></div>
+        </div>
+      </div>
+
+      <div class="seat-mid">
+        <div class="seat-info" id="seat1-info">
+          <div class="avatar team1" id="seat1-avatar">L</div>
+          <div class="seat-name" id="seat1-name" data-i18n="leftLabel">Left</div>
+          <div class="seat-sub" id="seat1-sub"></div>
+          <div class="cardback-count" id="seat1-cards"></div>
+        </div>
+
+        <div class="center-area">
+          <div class="trump-badge" id="trump-badge" style="visibility:hidden;">
+            <span class="suit" id="trump-suit-symbol">♠</span>
+            <span id="trump-suit-label">Trump: —</span>
+          </div>
+          <div class="trick-piles-row">
+            <div class="trick-pile-wrap">
+              <div class="trick-pile" id="my-tricks-pile"></div>
+              <div class="trick-pile-label"><span data-i18n="yourTricks">Your tricks</span> <span id="my-tricks-count">0</span></div>
+            </div>
+            <div class="trick-pile-wrap">
+              <div class="trick-pile" id="opp-tricks-pile"></div>
+              <div class="trick-pile-label"><span data-i18n="oppTricks">Opp tricks</span> <span id="opp-tricks-count">0</span></div>
+            </div>
+          </div>
+          <div class="trick-grid" id="trick-grid"></div>
+        </div>
+
+        <div class="seat-info" id="seat3-info">
+          <div class="avatar team1" id="seat3-avatar">R</div>
+          <div class="seat-name" id="seat3-name" data-i18n="rightLabel">Right</div>
+          <div class="seat-sub" id="seat3-sub"></div>
+          <div class="cardback-count" id="seat3-cards"></div>
+        </div>
+      </div>
+
+      <div class="seat-row" style="flex-direction:column;">
+        <div class="seat-info" id="seat0-info" style="background:none;">
+          <div class="seat-sub" id="seat0-sub"></div>
+        </div>
+        <div class="hand-row" id="hand-row"></div>
+        <div class="controls" id="controls"></div>
+        <div id="summary-area"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="log-toggle">
+    <button id="log-toggle-btn" data-i18n="showLog">Show game log</button>
+  </div>
+  <div class="log-panel" id="log-panel"></div>
+</div>
+</div>
+
+<script src="../shared/shelem-engine.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="js/profile.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/local-game.js"></script>
+<script src="js/menu.js"></script>
+<script src="js/network.js"></script>
+<script src="js/online.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
