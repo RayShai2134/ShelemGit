@@ -65,6 +65,25 @@ function openFriendsPlayModal(){
   };
 }
 
+function openMatchmakingModal(){
+  openModal(
+    '<h2>'+t('playOnline')+'</h2>' +
+    '<input type="text" id="mm-name-input" maxlength="18" placeholder="'+t('yourName')+'" value="'+profile.name.replace(/"/g,'')+'">' +
+    '<p class="muted">'+t('findingPlayers')+'</p>' +
+    '<div class="modal-actions"><button id="mm-cancel-btn">'+t('cancel')+'</button></div>'
+  );
+  var nameInput = document.getElementById('mm-name-input');
+  nameInput.oninput = function(){
+    var val = nameInput.value.trim();
+    if(val.length>0 && val!==profile.name){ profile.name = val; saveProfile(); }
+  };
+  document.getElementById('mm-cancel-btn').onclick = function(){
+    Network.leaveMatchmaking();
+    closeModal();
+  };
+  Network.joinMatchmaking();
+}
+
 function renderWaitingRoom(payload){
   onlineRoomCode = payload.roomCode;
   onlineHostSeat = payload.hostSeat;
@@ -76,13 +95,18 @@ function renderWaitingRoom(payload){
     row.className = 'seat-slot-row' + (s ? '' : ' empty');
     var label = s ? (s.name + (s.connected ? '' : t('disconnectedTag'))) : t('emptySeat');
     if(s && s.type==='bot') label += t('botTag');
-    if(i===payload.hostSeat && s) label += t('hostTag');
+    if(!payload.matchmaking && i===payload.hostSeat && s) label += t('hostTag');
     row.textContent = label;
     list.appendChild(row);
   });
   var hostControls = document.getElementById('wr-host-controls');
   hostControls.innerHTML = '';
-  if(mySeat===payload.hostSeat){
+  if(payload.matchmaking){
+    var mmEl = document.createElement('div');
+    mmEl.className = 'muted';
+    mmEl.textContent = t('matchStarting');
+    hostControls.appendChild(mmEl);
+  } else if(mySeat===payload.hostSeat){
     var isFull = payload.seats.every(function(s){ return !!s; });
     if(!isFull){
       var fillBtn = document.createElement('button');

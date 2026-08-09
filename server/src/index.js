@@ -6,6 +6,7 @@ var { Server } = require('socket.io');
 var RoomManager = require('./rooms/RoomManager.js');
 var ClientRegistry = require('./identity/ClientRegistry.js');
 var Room = require('./rooms/Room.js');
+var MatchmakingQueue = require('./matchmaking/MatchmakingQueue.js');
 
 var app = express();
 var server = http.createServer(app);
@@ -18,6 +19,7 @@ app.use('/', express.static(CLIENT_DIR));
 
 var roomManager = new RoomManager(io);
 var registry = new ClientRegistry();
+var matchmakingQueue = new MatchmakingQueue(roomManager, registry, io);
 
 io.on('connection', function(socket){
   var auth = socket.handshake.auth || {};
@@ -52,6 +54,15 @@ io.on('connection', function(socket){
     socket.join(room.channel());
     socket.emit('roomJoined', { roomCode: room.code, seat: seat });
     room.broadcastRoomUpdate();
+  });
+
+  socket.on('joinMatchmaking', function(payload){
+    var name = nameFrom(payload);
+    matchmakingQueue.join(clientId, name, socket.id);
+  });
+
+  socket.on('leaveMatchmaking', function(){
+    matchmakingQueue.leave(socket.id);
   });
 
   socket.on('fillWithBots', function(){
@@ -113,6 +124,7 @@ io.on('connection', function(socket){
   });
 
   socket.on('disconnect', function(){
+    matchmakingQueue.leave(socket.id);
     var entry = registry.unbind(socket.id);
     if(!entry) return;
     var room = roomManager.get(entry.roomCode);

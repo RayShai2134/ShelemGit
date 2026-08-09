@@ -49,7 +49,7 @@ document.getElementById('settings-btn').onclick = openSettingsModal;
 document.getElementById('how-to-play-btn').onclick = openHowToPlayModal;
 
 document.getElementById('play-online-btn').onclick = function(){
-  showToast(t('playOnlineComingSoon'));
+  openMatchmakingModal();
 };
 document.getElementById('play-friends-btn').onclick = function(){
   openFriendsPlayModal();

@@ -25,6 +25,8 @@ var Network = (function(){
 
   function createRoom(){ connect(); socket.emit('createRoom', { name: profile.name }); }
   function joinRoom(code){ connect(); socket.emit('joinRoom', { roomCode: code, name: profile.name }); }
+  function joinMatchmaking(){ connect(); socket.emit('joinMatchmaking', { name: profile.name }); }
+  function leaveMatchmaking(){ socket && socket.emit('leaveMatchmaking'); }
   function startGame(targetScore){ socket && socket.emit('startGame', { targetScore: targetScore }); }
   function fillWithBots(){ socket && socket.emit('fillWithBots'); }
   function sendAction(action){ socket && socket.emit('action', action); }
@@ -33,6 +35,7 @@ var Network = (function(){
 
   return {
     on: on, connect: connect, createRoom: createRoom, joinRoom: joinRoom,
+    joinMatchmaking: joinMatchmaking, leaveMatchmaking: leaveMatchmaking,
     startGame: startGame, fillWithBots: fillWithBots, sendAction: sendAction,
     leaveRoom: leaveRoom, disconnect: disconnectSocket
   };

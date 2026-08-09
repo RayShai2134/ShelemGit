@@ -22,6 +22,7 @@ function Room(code, io){
   this.seats = [null, null, null, null]; // {type:'human', clientId, name, socketId, connected}
   this.hostSeat = 0;
   this.game = null;
+  this.isMatchmade = false; // true for rooms formed by public matchmaking — no manual host controls
 }
 
 Room.PHASES = ROOM_PHASES;
@@ -135,6 +136,7 @@ Room.prototype.roomUpdatePayload = function(){
     roomCode: this.code,
     roomPhase: this.roomPhase,
     hostSeat: this.hostSeat,
+    matchmaking: this.isMatchmade,
     seats: this.seats.map(function(s){
       return s ? { name: s.name, type: s.type, connected: s.connected } : null;
     })

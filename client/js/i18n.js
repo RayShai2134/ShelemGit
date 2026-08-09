@@ -7,7 +7,7 @@ var STRINGS = {
   en: {
     appSubtitle: 'A Persian card game platform',
     playOnline: 'Play online', playFriends: 'Play vs friends', playBots: 'Play vs bots',
-    comingSoon: 'Coming soon', readyToPlay: 'Ready to play', tapToEdit: 'Tap to edit',
+    readyToPlay: 'Ready to play', tapToEdit: 'Tap to edit',
     menuBack: '← Menu', options: 'Options', youPartner: 'You & partner', opponents: 'Opponents', target: 'Target',
     sortHand: 'Sort your hand', weakToStrong: 'Weak → strong', strongToWeak: 'Strong → weak',
     turnDirection: 'Turn direction', clockwise: 'Clockwise', counterclockwise: 'Counterclockwise',
@@ -54,7 +54,7 @@ var STRINGS = {
     youAreDeclarer: 'You are the declarer', declarerLabel: 'Declarer', passedLabel: 'Passed',
     trumpLabel: function(s){ return 'Trump: ' + s; },
     leftLabel: 'Left', partnerLabel: 'Partner', rightLabel: 'Right', youLabel: 'You',
-    disconnectedFromServer: 'Disconnected from server.', playOnlineComingSoon: 'Play online is coming soon — needs a server first.',
+    disconnectedFromServer: 'Disconnected from server.',
     logNewGameStart: function(target){ return 'New game started — first to ' + target + ' wins'; },
     logDealerBidding: function(dealer, bidder){ return 'Dealer: '+dealer+'. Bidding begins with '+bidder; },
     logYouBid: function(amount){ return 'You bid ' + amount; },
@@ -67,12 +67,14 @@ var STRINGS = {
     logWinsTrick: function(name){ return name + ' wins the trick'; },
     logBids: function(name, amount){ return name + ' bids ' + amount; },
     logPasses: function(name){ return name + ' passes'; },
-    logDiscards: function(name){ return name + ' discards 4 cards from the widow'; }
+    logDiscards: function(name){ return name + ' discards 4 cards from the widow'; },
+    findingPlayers: 'Finding players… this may take up to 20 seconds.',
+    matchStarting: 'Match found — starting…'
   },
   fa: {
     appSubtitle: 'یک بازی ورق ایرانی',
     playOnline: 'بازی آنلاین', playFriends: 'بازی با دوستان', playBots: 'بازی با ربات‌ها',
-    comingSoon: 'به‌زودی', readyToPlay: 'آماده بازی', tapToEdit: 'برای ویرایش بزنید',
+    readyToPlay: 'آماده بازی', tapToEdit: 'برای ویرایش بزنید',
     menuBack: '← منو', options: 'تنظیمات', youPartner: 'شما و هم‌تیمی', opponents: 'حریفان', target: 'هدف',
     sortHand: 'چیدمان دست شما', weakToStrong: 'ضعیف ← قوی', strongToWeak: 'قوی ← ضعیف',
     turnDirection: 'جهت نوبت', clockwise: 'ساعت‌گرد', counterclockwise: 'پادساعت‌گرد',
@@ -119,7 +121,7 @@ var STRINGS = {
     youAreDeclarer: 'شما حاکم هستید', declarerLabel: 'حاکم', passedLabel: 'پاس داد',
     trumpLabel: function(s){ return 'حکم: ' + s; },
     leftLabel: 'چپ', partnerLabel: 'هم‌تیمی', rightLabel: 'راست', youLabel: 'شما',
-    disconnectedFromServer: 'ارتباط با سرور قطع شد.', playOnlineComingSoon: 'بازی آنلاین به‌زودی فعال می‌شود — نیاز به سرور دارد.',
+    disconnectedFromServer: 'ارتباط با سرور قطع شد.',
     logNewGameStart: function(target){ return 'بازی جدید شروع شد — اولین تیمی که به ' + target + ' برسد برنده است'; },
     logDealerBidding: function(dealer, bidder){ return 'دست‌دهنده: '+dealer+'. حراج با '+bidder+' شروع می‌شود'; },
     logYouBid: function(amount){ return 'شما ' + amount + ' پیشنهاد دادید'; },
@@ -132,7 +134,9 @@ var STRINGS = {
     logWinsTrick: function(name){ return name + ' این دست را برد'; },
     logBids: function(name, amount){ return name + ' ' + amount + ' پیشنهاد داد'; },
     logPasses: function(name){ return name + ' پاس داد'; },
-    logDiscards: function(name){ return name + ' چهار کارت از حکم وسط دور ریخت'; }
+    logDiscards: function(name){ return name + ' چهار کارت از حکم وسط دور ریخت'; },
+    findingPlayers: 'در حال یافتن بازیکن… ممکن است تا ۲۰ ثانیه طول بکشد.',
+    matchStarting: 'بازی پیدا شد — در حال شروع…'
   }
 };
 
