@@ -150,9 +150,12 @@ Room.prototype.broadcastRoomUpdate = function(){
 Room.prototype.broadcastState = function(){
   var self = this;
   if(!this.game) return;
+  var players = this.seats.map(function(s){ return s ? s.name : ''; });
   this.seats.forEach(function(seat, idx){
     if(seat && seat.type==='human' && seat.connected){
-      self.io.to(seat.socketId).emit('state', buildStateForSeat(self.game, idx));
+      var payload = buildStateForSeat(self.game, idx);
+      payload.players = players;
+      self.io.to(seat.socketId).emit('state', payload);
     }
   });
 };

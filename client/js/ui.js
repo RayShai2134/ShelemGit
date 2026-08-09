@@ -15,6 +15,15 @@ function relSeat(actualSeat){
   return (actualSeat - mySeat + 4) % 4;
 }
 
+/* The name to display for an absolute seat: the real player/room name when
+ * one's available (online games — server-supplied via view.players), else
+ * the translated screen-position label (offline vs-bots mode, where there
+ * are no real names, just Left/Partner/Right opponents). */
+function displayName(view, seat){
+  if(view.players && view.players[seat]) return view.players[seat];
+  return SEAT_NAMES()[relSeat(seat)];
+}
+
 function log(msg){
   logEntries.push(msg);
   if(logEntries.length>200) logEntries.shift();
@@ -133,6 +142,7 @@ function render(){
                  (view.phase===PHASES.PLAYING && view.seatToPlay===seat) ||
                  (view.phase===PHASES.DISCARDING && view.declarer===seat);
     info.className = 'seat-info' + (active ? ' active' : '');
+    document.getElementById('seat'+pos+'-name').textContent = displayName(view, seat);
     var subText = '';
     if(view.declarer===seat) subText = t('declarerLabel');
     if(view.phase===PHASES.BIDDING && view.passedSeats[seat]) subText = t('passedLabel');
@@ -183,14 +193,14 @@ function render(){
   var bidStatusBox = document.getElementById('bid-status-box');
   if(view.phase===PHASES.BIDDING){
     bidInfo.innerHTML = view.currentBid>0
-      ? t('currentBidBy', view.currentBid, SEAT_NAMES()[relSeat(view.currentBidder)])
+      ? t('currentBidBy', view.currentBid, displayName(view, view.currentBidder))
       : t('biddingMinimum');
     bidStatusBox.style.display = 'block';
   } else if(view.phase===PHASES.DISCARDING){
-    bidInfo.innerHTML = t('wonBidPickup', SEAT_NAMES()[relSeat(view.declarer)], view.currentBid);
+    bidInfo.innerHTML = t('wonBidPickup', displayName(view, view.declarer), view.currentBid);
     bidStatusBox.style.display = 'block';
   } else if(view.phase===PHASES.PLAYING || view.phase===PHASES.HAND_COMPLETE){
-    bidInfo.innerHTML = t('needsToWin', SEAT_NAMES()[relSeat(view.declarer)], view.currentBid) + '<br>' +
+    bidInfo.innerHTML = t('needsToWin', displayName(view, view.declarer), view.currentBid) + '<br>' +
       t('thisHand', view.capturedPointsByTeam[myTeam], view.capturedPointsByTeam[oppTeam]);
     bidStatusBox.style.display = 'block';
   } else {
@@ -275,7 +285,7 @@ function renderHandAndControls(view){
       var waitMsg = document.createElement('div');
       waitMsg.style.color = 'var(--muted)';
       waitMsg.style.fontSize = '13px';
-      waitMsg.textContent = t('waitingFor', SEAT_NAMES()[relSeat(view.seatToBid)]);
+      waitMsg.textContent = t('waitingFor', displayName(view, view.seatToBid));
       controls.appendChild(waitMsg);
     }
   }
@@ -303,7 +313,7 @@ function renderHandAndControls(view){
       var waitMsg2 = document.createElement('div');
       waitMsg2.style.color = 'var(--muted)';
       waitMsg2.style.fontSize = '13px';
-      waitMsg2.textContent = t('isDiscarding', SEAT_NAMES()[relSeat(view.declarer)]);
+      waitMsg2.textContent = t('isDiscarding', displayName(view, view.declarer));
       controls.appendChild(waitMsg2);
     }
   }
@@ -327,7 +337,7 @@ function renderHandAndControls(view){
       var waitMsg3 = document.createElement('div');
       waitMsg3.style.color = 'var(--muted)';
       waitMsg3.style.fontSize = '13px';
-      waitMsg3.textContent = t('waitingFor', SEAT_NAMES()[relSeat(view.seatToPlay)]);
+      waitMsg3.textContent = t('waitingFor', displayName(view, view.seatToPlay));
       controls.appendChild(waitMsg3);
     }
   }
@@ -340,7 +350,7 @@ function renderHandAndControls(view){
     var teamLabel = r.declarerTeam===myTeam ? t('yourTeam') : t('opponents');
     card.innerHTML =
       '<h3>' + t('handResultTitle', view.handNumber) + '</h3>' +
-      '<p>' + t('declaredBid', SEAT_NAMES()[relSeat(r.declarer)], r.bid) + '</p>' +
+      '<p>' + t('declaredBid', displayName(view, r.declarer), r.bid) + '</p>' +
       '<p>' + t('captured', teamLabel, r.declarerPoints) + '</p>' +
       '<p class="' + (r.madeBid ? 'result-made' : 'result-set') + '">' +
         (r.madeBid ? t('madeBid', teamLabel, r.declarerPoints) : t('wasSet', teamLabel, r.bid)) +
