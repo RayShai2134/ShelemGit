@@ -44,6 +44,9 @@ function applyUserToProfile(user){
   profile.language = user.language;
   saveProfile();
   applyStaticTranslations();
+  /* Open a background connection so friends can see we're online even before
+   * we've joined any game — reconnects are cheap/no-op if already connected. */
+  if(typeof Network!=='undefined') Network.connect();
 }
 
 function signup(email, username, password, displayName){
@@ -61,6 +64,7 @@ function login(email, password){
 function logout(){
   setAuthToken(null);
   currentUser = null;
+  if(typeof Network!=='undefined') Network.disconnect();
 }
 
 /* Called at boot: if a saved session token exists, validate it and refresh

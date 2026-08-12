@@ -1,11 +1,16 @@
 var express = require('express');
 var pool = require('../db/pool.js');
 var authMiddleware = require('../auth/authMiddleware.js');
+var presence = require('../presence/OnlinePresence.js');
 
 var router = express.Router();
 
 function friendRow(row){
-  return { friendshipId: row.id, userId: row.other_id, username: row.other_username, displayName: row.other_display_name, avatar: row.other_avatar };
+  return {
+    friendshipId: row.id, userId: row.other_id, username: row.other_username,
+    displayName: row.other_display_name, avatar: row.other_avatar,
+    online: presence.isOnline(row.other_id)
+  };
 }
 
 router.get('/', authMiddleware.requireAuth, async function(req, res){

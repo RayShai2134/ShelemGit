@@ -227,6 +227,14 @@ body{
   border-bottom:1px solid rgba(255,255,255,0.06);
   font-size:14px;
 }
+.presence-dot{
+  display:inline-block;
+  width:8px;height:8px;
+  border-radius:50%;
+  background:var(--muted);
+  margin-right:4px;
+}
+.presence-dot.online{ background:var(--good); box-shadow:0 0 4px var(--good); }
 .rule-section{ margin-bottom:14px; }
 .rule-section h3{
   font-size:14px;

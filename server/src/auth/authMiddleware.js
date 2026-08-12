@@ -22,4 +22,13 @@ function signToken(userId){
   return jwt.sign({ userId: userId }, SECRET, { expiresIn: '90d' });
 }
 
-module.exports = { requireAuth: requireAuth, signToken: signToken };
+/* Returns the userId for a valid token, or null — used where a hard 401
+ * isn't appropriate (e.g. the Socket.io handshake, which is fine without
+ * a token for guest play). */
+function verifyToken(token){
+  if(!token) return null;
+  try{ return jwt.verify(token, SECRET).userId; }
+  catch(e){ return null; }
+}
+
+module.exports = { requireAuth: requireAuth, signToken: signToken, verifyToken: verifyToken };

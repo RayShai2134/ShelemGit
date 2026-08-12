@@ -9,6 +9,8 @@ var Room = require('./rooms/Room.js');
 var MatchmakingQueue = require('./matchmaking/MatchmakingQueue.js');
 var authRoutes = require('./auth/authRoutes.js');
 var friendsRoutes = require('./friends/friendsRoutes.js');
+var authMiddleware = require('./auth/authMiddleware.js');
+var presence = require('./presence/OnlinePresence.js');
 
 var app = express();
 var server = http.createServer(app);
@@ -32,6 +34,8 @@ io.on('connection', function(socket){
   var clientId = auth.clientId || socket.id;
   var defaultName = (auth.name || 'Player').toString().slice(0, 24);
   var defaultAvatar = (auth.avatar || '🙂').toString().slice(0, 8);
+  var presenceUserId = authMiddleware.verifyToken(auth.token);
+  if(presenceUserId) presence.markOnline(presenceUserId);
 
   function nameFrom(payload){
     var n = (payload && payload.name) ? payload.name.toString().trim().slice(0, 24) : '';
@@ -159,6 +163,7 @@ io.on('connection', function(socket){
   });
 
   socket.on('disconnect', function(){
+    if(presenceUserId) presence.markOffline(presenceUserId);
     matchmakingQueue.leave(socket.id);
     var entry = registry.unbind(socket.id);
     if(!entry) return;

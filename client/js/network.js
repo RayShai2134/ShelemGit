@@ -18,7 +18,8 @@ var Network = (function(){
 
   function connect(){
     if(socket) return socket;
-    socket = io({ auth: { clientId: getClientId(), name: profile.name, avatar: myAvatar() } });
+    var token = (typeof authToken==='function') ? authToken() : null;
+    socket = io({ auth: { clientId: getClientId(), name: profile.name, avatar: myAvatar(), token: token } });
     ['roomCreated','roomJoined','joinError','roomUpdate','state','actionError','seatChanged','connect','disconnect'].forEach(function(evt){
       socket.on(evt, function(payload){ fire(evt, payload); });
     });

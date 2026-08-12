@@ -88,7 +88,8 @@ function renderFriendsModalContent(data){
   html += data.friends.length===0
     ? '<p class="muted">'+t('noFriendsYet')+'</p>'
     : '<div class="friends-list">' + data.friends.map(function(f){
-        return '<div class="friend-row"><span>'+f.avatar+' '+f.displayName+' <span class="muted">@'+f.username+'</span></span>' +
+        var dot = '<span class="presence-dot' + (f.online ? ' online' : '') + '" title="' + (f.online ? t('online') : t('offline')) + '"></span>';
+        return '<div class="friend-row"><span>'+dot+f.avatar+' '+f.displayName+' <span class="muted">@'+f.username+'</span></span>' +
           '<button data-remove="'+f.friendshipId+'" style="padding:4px 10px;font-size:12px;">'+t('remove')+'</button></div>';
       }).join('') + '</div>';
   if(data.outgoing.length>0){
