@@ -71,3 +71,21 @@ document.getElementById('back-to-menu-btn').onclick = function(){
   document.getElementById('menu-screen').style.display = 'block';
 };
 
+/* Coin purchases redirect back here from Stripe Checkout with ?purchase=success|cancelled.
+ * The webhook (not this redirect) is what actually credits coins, so on success we just
+ * re-pull the account to pick up whatever the webhook already applied. */
+(function(){
+  var params = new URLSearchParams(window.location.search);
+  var purchase = params.get('purchase');
+  if(purchase!=='success' && purchase!=='cancelled') return;
+  params.delete('purchase');
+  var rest = params.toString();
+  window.history.replaceState({}, '', window.location.pathname + (rest ? '?'+rest : ''));
+  if(purchase==='success'){
+    showToast(t('purchaseSuccess'));
+    if(authToken()) apiFetch('/api/me').then(function(data){ applyUserToProfile(data.user); }).catch(function(){});
+  } else {
+    showToast(t('purchaseCancelled'));
+  }
+})();
+

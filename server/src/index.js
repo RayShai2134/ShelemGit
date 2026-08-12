@@ -10,6 +10,8 @@ var MatchmakingQueue = require('./matchmaking/MatchmakingQueue.js');
 var authRoutes = require('./auth/authRoutes.js');
 var friendsRoutes = require('./friends/friendsRoutes.js');
 var messagesRoutes = require('./messages/messagesRoutes.js');
+var paymentsRoutes = require('./payments/paymentsRoutes.js');
+var webhookRoute = require('./payments/webhookRoute.js');
 var authMiddleware = require('./auth/authMiddleware.js');
 var presence = require('./presence/OnlinePresence.js');
 var pool = require('./db/pool.js');
@@ -18,10 +20,14 @@ var app = express();
 var server = http.createServer(app);
 var io = new Server(server, { cors: { origin: '*' } });
 
+// Mounted before express.json() — Stripe needs the raw body to verify signatures.
+app.use('/api/stripe/webhook', webhookRoute);
+
 app.use(express.json());
 app.use('/api', authRoutes);
 app.use('/api/friends', friendsRoutes);
 app.use('/api/messages', messagesRoutes);
+app.use('/api', paymentsRoutes);
 
 var CLIENT_DIR = path.join(__dirname, '..', '..', 'client');
 var SHARED_DIR = path.join(__dirname, '..', '..', 'shared');
@@ -156,13 +162,13 @@ io.on('connection', function(socket){
     }
   });
 
-  socket.on('startGame', function(payload){
+  socket.on('startGame', async function(payload){
     var entry = registry.get(socket.id);
     if(!entry) return;
     var room = roomManager.get(entry.roomCode);
     if(!room) return;
     try{
-      room.startGame(entry.seat, payload && payload.targetScore);
+      await room.startGame(entry.seat, payload && payload.targetScore, payload && payload.entryFee);
       room.broadcastRoomUpdate();
       room.broadcastState();
       room.advanceBotsIfNeeded();

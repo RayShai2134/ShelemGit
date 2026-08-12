@@ -4,7 +4,7 @@
  */
 var AVATAR_OPTIONS = ['🦁','🐯','🦅','🐺','🦊','🐻','🐨','🦉','🐸','🦋'];
 
-var profile = { name:'Player', avatarIndex:0, coins:500, targetScore:500, language:'en' };
+var profile = { name:'Player', avatar:AVATAR_OPTIONS[0], unlockedAvatars:[], coins:500, targetScore:500, language:'en' };
 var gameStarted = false;
 
 function loadProfile(){
@@ -13,7 +13,11 @@ function loadProfile(){
     if(raw){
       var loaded = JSON.parse(raw);
       profile.name = loaded.name || profile.name;
-      profile.avatarIndex = typeof loaded.avatarIndex==='number' ? loaded.avatarIndex : 0;
+      // Older saves stored a free-avatar index instead of the emoji itself;
+      // premium avatars can't be represented that way, so migrate forward.
+      if(typeof loaded.avatar==='string' && loaded.avatar) profile.avatar = loaded.avatar;
+      else if(typeof loaded.avatarIndex==='number') profile.avatar = AVATAR_OPTIONS[loaded.avatarIndex] || AVATAR_OPTIONS[0];
+      profile.unlockedAvatars = Array.isArray(loaded.unlockedAvatars) ? loaded.unlockedAvatars : [];
       profile.coins = typeof loaded.coins==='number' ? loaded.coins : 500;
       profile.targetScore = typeof loaded.targetScore==='number' ? loaded.targetScore : 500;
       profile.language = (loaded.language==='fa') ? 'fa' : 'en';
@@ -31,7 +35,7 @@ function saveProfile(){
 }
 
 function renderProfileBar(){
-  document.getElementById('profile-avatar-circle').textContent = AVATAR_OPTIONS[profile.avatarIndex];
+  document.getElementById('profile-avatar-circle').textContent = profile.avatar;
   document.getElementById('profile-name-label').textContent = profile.name;
   document.getElementById('coin-count').textContent = profile.coins;
   var subtextEl = document.getElementById('profile-subtext');

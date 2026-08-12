@@ -54,3 +54,7 @@ CREATE TABLE IF NOT EXISTS coin_purchases (
   CHECK (status IN ('pending', 'paid'))
 );
 CREATE INDEX IF NOT EXISTS idx_coin_purchases_user ON coin_purchases(user_id);
+
+-- Cosmetic avatars bought with coins (not real money) — array of emoji this
+-- account owns beyond the free default set.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS unlocked_avatars TEXT[] NOT NULL DEFAULT '{}';

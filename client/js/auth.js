@@ -37,8 +37,8 @@ function isLoggedIn(){ return !!currentUser; }
 function applyUserToProfile(user){
   currentUser = user;
   profile.name = user.displayName;
-  var idx = AVATAR_OPTIONS.indexOf(user.avatar);
-  profile.avatarIndex = idx>=0 ? idx : 0;
+  profile.avatar = user.avatar || AVATAR_OPTIONS[0];
+  profile.unlockedAvatars = user.unlockedAvatars || [];
   profile.coins = user.coins;
   profile.targetScore = user.targetScore;
   profile.language = user.language;
@@ -52,7 +52,7 @@ function applyUserToProfile(user){
 function signup(email, username, password, displayName){
   return apiFetch('/api/signup', {
     method: 'POST',
-    body: { email: email, username: username, password: password, displayName: displayName, avatar: AVATAR_OPTIONS[profile.avatarIndex] }
+    body: { email: email, username: username, password: password, displayName: displayName, avatar: profile.avatar }
   }).then(function(data){ setAuthToken(data.token); applyUserToProfile(data.user); return data.user; });
 }
 
@@ -81,8 +81,8 @@ function syncProfileToAccount(){
   if(!isLoggedIn()) return;
   apiFetch('/api/me', {
     method: 'PUT',
-    body: { displayName: profile.name, avatar: AVATAR_OPTIONS[profile.avatarIndex], targetScore: profile.targetScore, language: profile.language }
-  }).then(function(data){ currentUser = data.user; }).catch(function(){});
+    body: { displayName: profile.name, avatar: profile.avatar, targetScore: profile.targetScore, language: profile.language }
+  }).then(function(data){ currentUser = data.user; profile.unlockedAvatars = data.user.unlockedAvatars || []; }).catch(function(){});
 }
 
 tryResumeSession();

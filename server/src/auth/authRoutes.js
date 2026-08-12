@@ -2,6 +2,7 @@ var express = require('express');
 var bcrypt = require('bcryptjs');
 var pool = require('../db/pool.js');
 var authMiddleware = require('./authMiddleware.js');
+var Avatars = require('../../../shared/avatars.js');
 
 var router = express.Router();
 
@@ -15,6 +16,7 @@ function publicUser(row){
     id: row.id, email: row.email, username: row.username,
     displayName: row.display_name, avatar: row.avatar,
     coins: row.coins, targetScore: row.target_score, language: row.language,
+    unlockedAvatars: row.unlocked_avatars || [],
     stats: {
       gamesPlayed: gamesPlayed,
       gamesWon: gamesWon,
@@ -31,6 +33,7 @@ router.post('/signup', async function(req, res){
     var password = req.body.password || '';
     var displayName = (req.body.displayName || username).toString().trim().slice(0, 24);
     var avatar = (req.body.avatar || '🙂').toString().slice(0, 8);
+    if(!Avatars.isValidAvatarFor(avatar, [])) avatar = '🙂';
 
     if(!EMAIL_RE.test(email)) return res.status(400).json({ error: 'Enter a valid email address.' });
     if(!USERNAME_RE.test(username)) return res.status(400).json({ error: 'Username must be 3-20 letters, numbers, or underscores.' });
@@ -90,7 +93,12 @@ router.put('/me', authMiddleware.requireAuth, async function(req, res){
       fields.push('display_name=$'+(i++)); values.push(req.body.displayName.trim().slice(0,24));
     }
     if(typeof req.body.avatar==='string'){
-      fields.push('avatar=$'+(i++)); values.push(req.body.avatar.slice(0,8));
+      var existingRow = await pool.query('SELECT unlocked_avatars FROM users WHERE id=$1', [req.userId]);
+      var candidateAvatar = req.body.avatar.slice(0,8);
+      if(!Avatars.isValidAvatarFor(candidateAvatar, existingRow.rows[0].unlocked_avatars)){
+        return res.status(403).json({ error: "You don't own that avatar yet." });
+      }
+      fields.push('avatar=$'+(i++)); values.push(candidateAvatar);
     }
     if(typeof req.body.targetScore==='number' && req.body.targetScore>=50 && req.body.targetScore<=100000){
       fields.push('target_score=$'+(i++)); values.push(req.body.targetScore);

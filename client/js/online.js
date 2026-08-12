@@ -150,11 +150,26 @@ function renderWaitingRoom(payload){
       fillBtn.onclick = function(){ Network.fillWithBots(); };
       hostControls.appendChild(fillBtn);
     }
+    var feeLabel = document.createElement('p');
+    feeLabel.className = 'muted';
+    feeLabel.style.cssText = 'font-size:12px;margin:6px 0 4px;';
+    feeLabel.textContent = t('entryFeeLabel');
+    hostControls.appendChild(feeLabel);
+    var feeInput = document.createElement('input');
+    feeInput.type = 'text';
+    feeInput.inputMode = 'numeric';
+    feeInput.id = 'wr-entry-fee-input';
+    feeInput.placeholder = t('entryFeePlaceholder');
+    feeInput.style.marginBottom = '10px';
+    hostControls.appendChild(feeInput);
     var startBtn = document.createElement('button');
     startBtn.className = 'primary';
     startBtn.textContent = t('startGame');
     startBtn.disabled = !isFull;
-    startBtn.onclick = function(){ Network.startGame(profile.targetScore || 500); };
+    startBtn.onclick = function(){
+      var fee = parseInt(feeInput.value, 10);
+      Network.startGame(profile.targetScore || 500, (!isNaN(fee) && fee>0) ? fee : 0);
+    };
     hostControls.appendChild(startBtn);
   } else {
     var waitEl = document.createElement('div');

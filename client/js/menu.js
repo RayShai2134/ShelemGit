@@ -18,8 +18,9 @@ function closeModal(){
 }
 
 function openProfileModal(){
-  var avatarsHtml = AVATAR_OPTIONS.map(function(a, i){
-    return '<div class="avatar-choice' + (i===profile.avatarIndex ? ' selected' : '') + '" data-idx="'+i+'">'+a+'</div>';
+  var ownedAvatars = AVATAR_OPTIONS.concat(profile.unlockedAvatars || []);
+  var avatarsHtml = ownedAvatars.map(function(a){
+    return '<div class="avatar-choice' + (a===profile.avatar ? ' selected' : '') + '" data-avatar="'+a+'">'+a+'</div>';
   }).join('');
   openModal(
     '<h2>'+t('editProfile')+'</h2>' +
@@ -33,30 +34,32 @@ function openProfileModal(){
     '<input type="text" id="name-input" maxlength="18" value="'+profile.name.replace(/"/g,'')+'" placeholder="'+t('yourName')+'">' +
     '<p class="muted" style="margin-top:-8px;">'+t('chooseAvatar')+'</p>' +
     '<div class="avatar-grid" id="avatar-grid">'+avatarsHtml+'</div>' +
+    '<p class="muted" style="margin-top:-8px;"><a href="#" id="open-avatar-shop-link">'+t('moreAvatars')+'</a></p>' +
     '<div class="modal-actions">' +
       (isLoggedIn() ? '<button id="profile-logout-btn">'+t('logOut')+'</button>' : '') +
       '<button id="profile-cancel-btn">'+t('cancel')+'</button>' +
       '<button class="primary" id="profile-save-btn">'+t('save')+'</button>' +
     '</div>'
   );
-  var chosenIdx = profile.avatarIndex;
+  var chosenAvatar = profile.avatar;
   document.querySelectorAll('.avatar-choice').forEach(function(el){
     el.onclick = function(){
       document.querySelectorAll('.avatar-choice').forEach(function(x){ x.classList.remove('selected'); });
       el.classList.add('selected');
-      chosenIdx = parseInt(el.getAttribute('data-idx'), 10);
+      chosenAvatar = el.getAttribute('data-avatar');
     };
   });
   document.getElementById('profile-cancel-btn').onclick = closeModal;
   document.getElementById('profile-save-btn').onclick = function(){
     var newName = document.getElementById('name-input').value.trim();
     profile.name = newName.length>0 ? newName : 'Player';
-    profile.avatarIndex = chosenIdx;
+    profile.avatar = chosenAvatar;
     saveProfile();
     closeModal();
   };
   var logoutBtn = document.getElementById('profile-logout-btn');
   if(logoutBtn) logoutBtn.onclick = function(){ logout(); renderProfileBar(); closeModal(); };
+  document.getElementById('open-avatar-shop-link').onclick = function(e){ e.preventDefault(); openAvatarShopModal(); };
 }
 
 function openFriendsModal(){
@@ -178,12 +181,100 @@ function openAuthModal(mode){
 }
 
 function openBuyCoinsModal(){
+  if(!isLoggedIn()){
+    openModal(
+      '<h2>'+t('buyCoins')+'</h2>' +
+      '<p class="muted">'+t('friendsLoginPrompt')+'</p>' +
+      '<div class="modal-actions" style="justify-content:center;">' +
+        '<button class="primary" id="coins-login-btn">'+t('logInSignUp')+'</button>' +
+      '</div>'
+    );
+    document.getElementById('coins-login-btn').onclick = function(){ openAuthModal('login'); };
+    return;
+  }
+  openModal('<h2>'+t('buyCoins')+'</h2><p class="muted">'+t('loading')+'</p>');
+  apiFetch('/api/coins/packages').then(function(data){
+    renderBuyCoinsModalContent(data.packages);
+  }).catch(function(e){ showToast(e.message); closeModal(); });
+}
+
+function renderBuyCoinsModalContent(packages){
+  var rowsHtml = Object.keys(packages).map(function(key){
+    var pkg = packages[key];
+    var price = '$' + (pkg.amountCents/100).toFixed(2);
+    return '<div class="friend-row"><span>🪙 ' + pkg.coins + ' ' + t('coins') + '</span>' +
+      '<span><button class="primary" data-buy-package="'+key+'" style="padding:4px 12px;font-size:12px;">'+price+'</button></span></div>';
+  }).join('');
   openModal(
     '<h2>'+t('buyCoins')+'</h2>' +
-    '<p>'+t('buyCoinsBody')+'</p>' +
-    '<div class="modal-actions"><button class="primary" id="coins-close-btn">'+t('gotIt')+'</button></div>'
+    '<div class="friends-list">' + rowsHtml + '</div>' +
+    '<div class="modal-actions"><button id="coins-close-btn">'+t('close')+'</button></div>'
   );
   document.getElementById('coins-close-btn').onclick = closeModal;
+  document.querySelectorAll('[data-buy-package]').forEach(function(btn){
+    btn.onclick = function(){
+      btn.disabled = true;
+      apiFetch('/api/coins/checkout', { method:'POST', body:{ package: btn.getAttribute('data-buy-package') } })
+        .then(function(data){ window.location.href = data.url; })
+        .catch(function(e){ showToast(e.message); btn.disabled = false; });
+    };
+  });
+}
+
+function openAvatarShopModal(){
+  if(!isLoggedIn()){
+    openModal(
+      '<h2>'+t('avatarShop')+'</h2>' +
+      '<p class="muted">'+t('friendsLoginPrompt')+'</p>' +
+      '<div class="modal-actions" style="justify-content:center;">' +
+        '<button class="primary" id="avatar-shop-login-btn">'+t('logInSignUp')+'</button>' +
+      '</div>'
+    );
+    document.getElementById('avatar-shop-login-btn').onclick = function(){ openAuthModal('login'); };
+    return;
+  }
+  openModal('<h2>'+t('avatarShop')+'</h2><p class="muted">'+t('loading')+'</p>');
+  apiFetch('/api/shop/avatars').then(function(data){
+    renderAvatarShopModalContent(data.premium, data.owned);
+  }).catch(function(e){ showToast(e.message); closeModal(); });
+}
+
+function renderAvatarShopModalContent(premium, owned){
+  var rowsHtml = premium.map(function(a){
+    var isOwned = owned.indexOf(a.emoji)!==-1;
+    var isEquipped = a.emoji===profile.avatar;
+    var actionHtml = isEquipped ? '<span class="muted">'+t('equipped')+'</span>'
+      : isOwned ? '<button data-equip="'+a.emoji+'" style="padding:4px 12px;font-size:12px;">'+t('equip')+'</button>'
+      : '<button class="primary" data-buy="'+a.emoji+'" style="padding:4px 12px;font-size:12px;">🪙 '+a.price+'</button>';
+    return '<div class="friend-row"><span style="font-size:20px;">'+a.emoji+'</span><span>'+actionHtml+'</span></div>';
+  }).join('');
+  openModal(
+    '<h2>'+t('avatarShop')+'</h2>' +
+    '<p class="muted" style="margin-top:-8px;">'+t('coinBalance', profile.coins)+'</p>' +
+    '<div class="friends-list">' + rowsHtml + '</div>' +
+    '<div class="modal-actions"><button id="avatar-shop-close-btn">'+t('close')+'</button></div>'
+  );
+  document.getElementById('avatar-shop-close-btn').onclick = closeModal;
+  document.querySelectorAll('[data-buy]').forEach(function(btn){
+    btn.onclick = function(){
+      btn.disabled = true;
+      apiFetch('/api/shop/avatars/buy', { method:'POST', body:{ emoji: btn.getAttribute('data-buy') } })
+        .then(function(data){
+          profile.coins = data.coins;
+          profile.unlockedAvatars = data.owned;
+          renderProfileBar();
+          openAvatarShopModal();
+        })
+        .catch(function(e){ showToast(e.message); btn.disabled = false; });
+    };
+  });
+  document.querySelectorAll('[data-equip]').forEach(function(btn){
+    btn.onclick = function(){
+      profile.avatar = btn.getAttribute('data-equip');
+      saveProfile();
+      openAvatarShopModal();
+    };
+  });
 }
 
 var TARGET_SCORE_PRESETS = [250, 500, 750, 1000];

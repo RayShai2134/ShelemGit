@@ -14,7 +14,7 @@ var Network = (function(){
     (handlers[event] || []).forEach(function(cb){ cb(payload); });
   }
 
-  function myAvatar(){ return AVATAR_OPTIONS[profile.avatarIndex]; }
+  function myAvatar(){ return profile.avatar; }
 
   function connect(){
     if(socket) return socket;
@@ -31,7 +31,7 @@ var Network = (function(){
   function joinMatchmaking(){ connect(); socket.emit('joinMatchmaking', { name: profile.name, avatar: myAvatar() }); }
   function leaveMatchmaking(){ socket && socket.emit('leaveMatchmaking'); }
   function chooseSeat(targetSeat){ socket && socket.emit('chooseSeat', { targetSeat: targetSeat }); }
-  function startGame(targetScore){ socket && socket.emit('startGame', { targetScore: targetScore }); }
+  function startGame(targetScore, entryFee){ socket && socket.emit('startGame', { targetScore: targetScore, entryFee: entryFee }); }
   function fillWithBots(){ socket && socket.emit('fillWithBots'); }
   function sendAction(action){ socket && socket.emit('action', action); }
   function leaveRoom(){ socket && socket.emit('leaveRoom'); }

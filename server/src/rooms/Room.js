@@ -84,12 +84,47 @@ Room.prototype.fillWithBots = function(requestingSeat){
 
 var VALID_TARGET_SCORES = [250, 500, 750, 1000];
 
-Room.prototype.startGame = function(requestingSeat, targetScore){
+/* Charges a flat entry fee to every human seat, atomically. Consumed —
+ * never redistributed to a winner (confirmed decision: this is a cost to
+ * play, not a wager between players). Throws (and charges nobody) if any
+ * human seat is a guest (no linked account) or can't afford it. */
+Room.prototype._chargeEntryFee = async function(fee){
+  var humanSeats = this.seats.filter(function(s){ return s && s.type==='human'; });
+  var missingAccount = humanSeats.filter(function(s){ return !s.userId; })[0];
+  if(missingAccount) throw new Error(missingAccount.name + ' must be signed in to play for coins.');
+
+  var client = await pool.connect();
+  try{
+    await client.query('BEGIN');
+    var userIds = humanSeats.map(function(s){ return s.userId; });
+    var res = await client.query('SELECT id, coins FROM users WHERE id = ANY($1) FOR UPDATE', [userIds]);
+    var byId = {};
+    res.rows.forEach(function(r){ byId[r.id] = r; });
+    var poorSeat = humanSeats.filter(function(s){ return !byId[s.userId] || byId[s.userId].coins < fee; })[0];
+    if(poorSeat){
+      throw new Error(poorSeat.name + ' doesn\'t have enough coins to play (' + fee + ' needed).');
+    }
+    await client.query('UPDATE users SET coins = coins - $1 WHERE id = ANY($2)', [fee, userIds]);
+    await client.query('COMMIT');
+  }catch(e){
+    await client.query('ROLLBACK').catch(function(){});
+    throw e;
+  }finally{
+    client.release();
+  }
+};
+
+Room.prototype.startGame = async function(requestingSeat, targetScore, entryFee){
   if(this.roomPhase!==ROOM_PHASES.WAITING) throw new Error('game already started');
   if(requestingSeat!==this.hostSeat) throw new Error('only the host can start the game');
   if(!this.isFull()) throw new Error('room is not full yet');
   var isValidCustom = typeof targetScore==='number' && targetScore>=50 && targetScore<=100000 && targetScore%5===0;
   this.targetScore = (VALID_TARGET_SCORES.indexOf(targetScore)!==-1 || isValidCustom) ? targetScore : 500;
+
+  var fee = (typeof entryFee==='number' && Number.isInteger(entryFee) && entryFee>0 && entryFee<=100000) ? entryFee : 0;
+  if(fee>0) await this._chargeEntryFee(fee);
+  this.entryFee = fee;
+
   var names = this.seats.map(function(s){ return s.name; });
   this.game = new ShelemEngine.ShelemGame(names, { targetScore: this.targetScore, direction: 1 });
   this.roomPhase = ROOM_PHASES.IN_PROGRESS;
@@ -176,6 +211,7 @@ Room.prototype.roomUpdatePayload = function(){
     roomPhase: this.roomPhase,
     hostSeat: this.hostSeat,
     matchmaking: this.isMatchmade,
+    entryFee: this.entryFee || 0,
     seats: this.seats.map(function(s){
       return s ? { name: s.name, type: s.type, connected: s.connected, avatar: s.avatar } : null;
     })
