@@ -49,7 +49,7 @@ io.on('connection', function(socket){
   socket.on('createRoom', function(payload){
     var name = nameFrom(payload);
     var room = roomManager.createRoom();
-    var seat = room.addHuman(clientId, name, socket.id, avatarFrom(payload));
+    var seat = room.addHuman(clientId, name, socket.id, avatarFrom(payload), presenceUserId);
     registry.bind(socket.id, clientId, name, room.code, seat);
     socket.join(room.channel());
     socket.emit('roomCreated', { roomCode: room.code, seat: seat });
@@ -63,7 +63,7 @@ io.on('connection', function(socket){
     if(!room){ socket.emit('joinError', { message: 'Room not found.' }); return; }
     if(room.roomPhase!==Room.PHASES.WAITING){ socket.emit('joinError', { message: 'That game has already started.' }); return; }
     var seat;
-    try{ seat = room.addHuman(clientId, name, socket.id, avatarFrom(payload)); }
+    try{ seat = room.addHuman(clientId, name, socket.id, avatarFrom(payload), presenceUserId); }
     catch(e){ socket.emit('joinError', { message: e.message }); return; }
     registry.bind(socket.id, clientId, name, room.code, seat);
     socket.join(room.channel());
@@ -72,7 +72,17 @@ io.on('connection', function(socket){
   });
 
   socket.on('joinMatchmaking', function(payload){
-    matchmakingQueue.join(clientId, nameFrom(payload), socket.id, avatarFrom(payload));
+    matchmakingQueue.join(clientId, nameFrom(payload), socket.id, avatarFrom(payload), presenceUserId);
+  });
+
+  socket.on('sendRoomChat', function(payload){
+    var entry = registry.get(socket.id);
+    if(!entry) return;
+    var room = roomManager.get(entry.roomCode);
+    if(!room) return;
+    var body = ((payload && payload.body) || '').toString().trim().slice(0, 300);
+    if(body.length===0) return;
+    room.broadcastChat(entry.seat, body);
   });
 
   socket.on('chooseSeat', function(payload){

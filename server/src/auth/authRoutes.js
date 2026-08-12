@@ -9,10 +9,18 @@ var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 var USERNAME_RE = /^[a-zA-Z0-9_]{3,20}$/;
 
 function publicUser(row){
+  var gamesPlayed = row.games_played || 0;
+  var gamesWon = row.games_won || 0;
   return {
     id: row.id, email: row.email, username: row.username,
     displayName: row.display_name, avatar: row.avatar,
-    coins: row.coins, targetScore: row.target_score, language: row.language
+    coins: row.coins, targetScore: row.target_score, language: row.language,
+    stats: {
+      gamesPlayed: gamesPlayed,
+      gamesWon: gamesWon,
+      gamesLost: gamesPlayed - gamesWon,
+      winPercentage: gamesPlayed>0 ? Math.round((gamesWon/gamesPlayed)*100) : 0
+    }
   };
 }
 

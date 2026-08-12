@@ -1,5 +1,6 @@
 var ShelemEngine = require('../../../shared/shelem-engine.js');
 var buildStateForSeat = require('../net/stateSerializer.js');
+var pool = require('../db/pool.js');
 
 var ROOM_PHASES = { WAITING: 'waiting', IN_PROGRESS: 'in-progress', ENDED: 'ended' };
 var BOT_NAMES = ['Bot Leila', 'Bot Kian', 'Bot Neda', 'Bot Arman'];
@@ -23,6 +24,7 @@ function Room(code, io){
   this.hostSeat = 0;
   this.game = null;
   this.isMatchmade = false; // true for rooms formed by public matchmaking — no manual host controls
+  this.statsRecorded = false; // guards against double-crediting stats if GAME_COMPLETE is observed more than once
 }
 
 Room.PHASES = ROOM_PHASES;
@@ -42,10 +44,10 @@ Room.prototype.isEmpty = function(){
   return this.seats.every(function(s){ return !s; });
 };
 
-Room.prototype.addHuman = function(clientId, name, socketId, avatar){
+Room.prototype.addHuman = function(clientId, name, socketId, avatar, userId){
   var seatIdx = this.emptySeatIndex();
   if(seatIdx===-1) throw new Error('room is full');
-  this.seats[seatIdx] = { type: 'human', clientId: clientId, name: name, socketId: socketId, connected: true, avatar: avatar || '🙂' };
+  this.seats[seatIdx] = { type: 'human', clientId: clientId, name: name, socketId: socketId, connected: true, avatar: avatar || '🙂', userId: userId || null };
   return seatIdx;
 };
 
@@ -91,6 +93,25 @@ Room.prototype.startGame = function(requestingSeat, targetScore){
   var names = this.seats.map(function(s){ return s.name; });
   this.game = new ShelemEngine.ShelemGame(names, { targetScore: this.targetScore, direction: 1 });
   this.roomPhase = ROOM_PHASES.IN_PROGRESS;
+  this.statsRecorded = false;
+};
+
+/* Credits games_played/games_won for every human seat with a linked account,
+ * once per completed game. Fire-and-forget — a DB hiccup here shouldn't take
+ * the room down, just logs and moves on. */
+Room.prototype.recordStatsIfComplete = function(){
+  if(!this.game || this.game.phase!==ShelemEngine.PHASES.GAME_COMPLETE) return;
+  if(this.statsRecorded) return;
+  this.statsRecorded = true;
+  var winningTeam = this.game.gameWinner;
+  this.seats.forEach(function(seat, idx){
+    if(!seat || seat.type!=='human' || !seat.userId) return;
+    var won = ShelemEngine.teamOf(idx)===winningTeam;
+    pool.query(
+      'UPDATE users SET games_played=games_played+1, games_won=games_won+$1 WHERE id=$2',
+      [won ? 1 : 0, seat.userId]
+    ).catch(function(e){ console.error('[stats] failed to record for user', seat.userId, e.message); });
+  });
 };
 
 /* If it's currently a bot seat's turn, plays that bot's move after a short
@@ -143,6 +164,7 @@ Room.prototype.applyAction = function(seat, action){
     case 'nextHand': this.game.startNextHand(); break;
     case 'newGame':
       this.game = new ShelemEngine.ShelemGame(this.seats.map(function(s){ return s.name; }), { targetScore: this.targetScore || 500, direction: 1 });
+      this.statsRecorded = false;
       break;
     default: throw new Error('unknown action type: ' + action.type);
   }
@@ -167,6 +189,7 @@ Room.prototype.broadcastRoomUpdate = function(){
 Room.prototype.broadcastState = function(){
   var self = this;
   if(!this.game) return;
+  this.recordStatsIfComplete();
   var players = this.seats.map(function(s){ return s ? s.name : ''; });
   var avatars = this.seats.map(function(s){ return s ? (s.avatar || '🤖') : ''; });
   this.seats.forEach(function(seat, idx){
@@ -176,6 +199,17 @@ Room.prototype.broadcastState = function(){
       payload.avatars = avatars;
       self.io.to(seat.socketId).emit('state', payload);
     }
+  });
+};
+
+/* Ephemeral in-room chat — broadcast only, never persisted (the room and
+ * its history disappear once the game ends, same as the rest of room state).
+ * Available for the whole match, not just the result screens. */
+Room.prototype.broadcastChat = function(seat, body){
+  var s = this.seats[seat];
+  if(!s) return;
+  this.io.to(this.channel()).emit('roomChat', {
+    seat: seat, name: s.name, avatar: s.avatar || '🤖', body: body, at: Date.now()
   });
 };
 

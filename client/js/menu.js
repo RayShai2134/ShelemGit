@@ -23,6 +23,12 @@ function openProfileModal(){
   openModal(
     '<h2>'+t('editProfile')+'</h2>' +
     (isLoggedIn() ? '<p class="muted" style="margin-top:-8px;">'+t('loggedInAs', currentUser.username)+'</p>' : '') +
+    (isLoggedIn() ? '<div class="stats-row">' +
+      '<div class="stat-tile"><div class="stat-val">'+currentUser.stats.gamesPlayed+'</div><div class="stat-lbl">'+t('statGames')+'</div></div>' +
+      '<div class="stat-tile"><div class="stat-val">'+currentUser.stats.gamesWon+'</div><div class="stat-lbl">'+t('statWins')+'</div></div>' +
+      '<div class="stat-tile"><div class="stat-val">'+currentUser.stats.gamesLost+'</div><div class="stat-lbl">'+t('statLosses')+'</div></div>' +
+      '<div class="stat-tile"><div class="stat-val">'+currentUser.stats.winPercentage+'%</div><div class="stat-lbl">'+t('statWinRate')+'</div></div>' +
+    '</div>' : '') +
     '<input type="text" id="name-input" maxlength="18" value="'+profile.name.replace(/"/g,'')+'" placeholder="'+t('yourName')+'">' +
     '<p class="muted" style="margin-top:-8px;">'+t('chooseAvatar')+'</p>' +
     '<div class="avatar-grid" id="avatar-grid">'+avatarsHtml+'</div>' +
