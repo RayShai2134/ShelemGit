@@ -20,7 +20,7 @@ var Network = (function(){
     if(socket) return socket;
     var token = (typeof authToken==='function') ? authToken() : null;
     socket = io({ auth: { clientId: getClientId(), name: profile.name, avatar: myAvatar(), token: token } });
-    ['roomCreated','roomJoined','joinError','roomUpdate','state','actionError','seatChanged','connect','disconnect'].forEach(function(evt){
+    ['roomCreated','roomJoined','joinError','roomUpdate','state','actionError','seatChanged','roomChat','directMessage','connect','disconnect'].forEach(function(evt){
       socket.on(evt, function(payload){ fire(evt, payload); });
     });
     return socket;
@@ -35,12 +35,15 @@ var Network = (function(){
   function fillWithBots(){ socket && socket.emit('fillWithBots'); }
   function sendAction(action){ socket && socket.emit('action', action); }
   function leaveRoom(){ socket && socket.emit('leaveRoom'); }
+  function sendRoomChat(body){ socket && socket.emit('sendRoomChat', { body: body }); }
+  function sendDirectMessage(toUserId, body){ connect(); socket.emit('sendDirectMessage', { toUserId: toUserId, body: body }); }
   function disconnectSocket(){ if(socket){ socket.disconnect(); socket = null; } }
 
   return {
     on: on, connect: connect, createRoom: createRoom, joinRoom: joinRoom,
     joinMatchmaking: joinMatchmaking, leaveMatchmaking: leaveMatchmaking, chooseSeat: chooseSeat,
     startGame: startGame, fillWithBots: fillWithBots, sendAction: sendAction,
-    leaveRoom: leaveRoom, disconnect: disconnectSocket
+    leaveRoom: leaveRoom, sendRoomChat: sendRoomChat, sendDirectMessage: sendDirectMessage,
+    disconnect: disconnectSocket
   };
 })();

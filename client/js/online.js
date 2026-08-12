@@ -22,6 +22,8 @@ function enterOnlineMode(seat){
   submitPlay = function(card){ Network.sendAction({ type:'playCard', card: card }); };
   submitNextHand = function(){ Network.sendAction({ type:'nextHand' }); };
   submitNewGame = function(){ Network.sendAction({ type:'newGame' }); };
+  document.getElementById('room-chat-toggle-wrap').style.display = 'flex';
+  document.getElementById('room-chat-messages').innerHTML = '';
 }
 
 function exitOnlineMode(){
@@ -30,6 +32,9 @@ function exitOnlineMode(){
   onlineRoomCode = null;
   onlineHostSeat = null;
   resetToLocalMode();
+  document.getElementById('room-chat-toggle-wrap').style.display = 'none';
+  document.getElementById('room-chat-panel').classList.remove('open');
+  document.getElementById('room-chat-toggle-btn').textContent = t('showChat');
 }
 
 function saveNameFromInput(){
@@ -193,8 +198,27 @@ Network.on('state', function(view){
 Network.on('disconnect', function(){
   if(onlineRoomCode) showToast(t('disconnectedFromServer'));
 });
+Network.on('roomChat', function(msg){
+  var text = (msg.seat===mySeat) ? msg.body : (msg.avatar+' '+msg.name+': '+msg.body);
+  appendChatMessage(document.getElementById('room-chat-messages'), { mine: msg.seat===mySeat, text: text });
+});
 
 document.getElementById('wr-leave-btn').onclick = function(){
   exitOnlineMode();
   showScreen('menu-screen');
 };
+
+document.getElementById('room-chat-toggle-btn').onclick = function(){
+  var panel = document.getElementById('room-chat-panel');
+  panel.classList.toggle('open');
+  this.textContent = panel.classList.contains('open') ? t('hideChat') : t('showChat');
+};
+function sendRoomChatFromInput(){
+  var input = document.getElementById('room-chat-input');
+  var body = input.value.trim();
+  if(body.length===0) return;
+  Network.sendRoomChat(body);
+  input.value = '';
+}
+document.getElementById('room-chat-send-btn').onclick = sendRoomChatFromInput;
+document.getElementById('room-chat-input').onkeydown = function(e){ if(e.key==='Enter') sendRoomChatFromInput(); };

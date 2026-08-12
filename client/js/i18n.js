@@ -79,7 +79,8 @@ var STRINGS = {
     haveAccount: 'Already have an account?', needAccount: "Don't have an account?",
     welcomeBack: 'Welcome!', logOut: 'Log out', loggedInAs: function(u){ return 'Signed in as @'+u; },
     online: 'Online', offline: 'Offline',
-    statGames: 'Games', statWins: 'Wins', statLosses: 'Losses', statWinRate: 'Win rate'
+    statGames: 'Games', statWins: 'Wins', statLosses: 'Losses', statWinRate: 'Win rate',
+    showChat: 'Show chat', hideChat: 'Hide chat', send: 'Send', typeMessage: 'Type a message…'
   },
   fa: {
     appSubtitle: 'یک بازی ورق ایرانی',
@@ -156,7 +157,8 @@ var STRINGS = {
     haveAccount: 'قبلاً حساب دارید؟', needAccount: 'حساب ندارید؟',
     welcomeBack: 'خوش آمدید!', logOut: 'خروج', loggedInAs: function(u){ return 'وارد شده به‌عنوان @'+u; },
     online: 'آنلاین', offline: 'آفلاین',
-    statGames: 'بازی‌ها', statWins: 'بردها', statLosses: 'باخت‌ها', statWinRate: 'درصد برد'
+    statGames: 'بازی‌ها', statWins: 'بردها', statLosses: 'باخت‌ها', statWinRate: 'درصد برد',
+    showChat: 'نمایش گفتگو', hideChat: 'پنهان کردن گفتگو', send: 'ارسال', typeMessage: 'پیام بنویسید…'
   }
 };
 

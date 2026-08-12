@@ -14,6 +14,7 @@ function openModal(html){
 }
 function closeModal(){
   document.getElementById('modal-overlay').classList.remove('open');
+  activeChatFriendId = null;
 }
 
 function openProfileModal(){
@@ -96,7 +97,8 @@ function renderFriendsModalContent(data){
     : '<div class="friends-list">' + data.friends.map(function(f){
         var dot = '<span class="presence-dot' + (f.online ? ' online' : '') + '" title="' + (f.online ? t('online') : t('offline')) + '"></span>';
         return '<div class="friend-row"><span>'+dot+f.avatar+' '+f.displayName+' <span class="muted">@'+f.username+'</span></span>' +
-          '<button data-remove="'+f.friendshipId+'" style="padding:4px 10px;font-size:12px;">'+t('remove')+'</button></div>';
+          '<span><button data-chat="'+f.userId+'" data-chat-name="'+f.displayName.replace(/"/g,'')+'" data-chat-avatar="'+f.avatar+'" style="padding:4px 10px;font-size:12px;">💬</button> ' +
+          '<button data-remove="'+f.friendshipId+'" style="padding:4px 10px;font-size:12px;">'+t('remove')+'</button></span></div>';
       }).join('') + '</div>';
   if(data.outgoing.length>0){
     html += '<p class="muted" style="margin-bottom:6px;">'+t('outgoingRequests')+'</p><div class="friends-list">' +
@@ -135,6 +137,11 @@ function renderFriendsModalContent(data){
     btn.onclick = function(){
       apiFetch('/api/friends/'+btn.getAttribute('data-remove'), { method:'DELETE' })
         .then(loadAndRenderFriends).catch(function(e){ showToast(e.message); });
+    };
+  });
+  document.querySelectorAll('[data-chat]').forEach(function(btn){
+    btn.onclick = function(){
+      openChatModal(parseInt(btn.getAttribute('data-chat'), 10), btn.getAttribute('data-chat-name'), btn.getAttribute('data-chat-avatar'));
     };
   });
 }

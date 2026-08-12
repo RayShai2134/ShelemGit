@@ -172,6 +172,17 @@
     </div>
   </div>
 
+  <div class="log-toggle" id="room-chat-toggle-wrap" style="display:none;">
+    <button id="room-chat-toggle-btn" data-i18n="showChat">Show chat</button>
+  </div>
+  <div class="chat-panel" id="room-chat-panel">
+    <div class="chat-messages" id="room-chat-messages"></div>
+    <div class="chat-input-row">
+      <input type="text" id="room-chat-input" maxlength="300" data-i18n-placeholder="typeMessage">
+      <button class="primary" id="room-chat-send-btn" data-i18n="send">Send</button>
+    </div>
+  </div>
+
   <div class="log-toggle">
     <button id="log-toggle-btn" data-i18n="showLog">Show game log</button>
   </div>
@@ -188,6 +199,7 @@
 <script src="js/local-game.js"></script>
 <script src="js/menu.js"></script>
 <script src="js/network.js"></script>
+<script src="js/chat.js"></script>
 <script src="js/online.js"></script>
 <script src="js/app.js"></script>
 </body>
