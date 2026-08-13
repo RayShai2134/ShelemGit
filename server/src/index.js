@@ -84,7 +84,12 @@ io.on('connection', function(socket){
   });
 
   socket.on('joinMatchmaking', function(payload){
-    matchmakingQueue.join(clientId, nameFrom(payload), socket.id, avatarFrom(payload), presenceUserId);
+    if(!presenceUserId){ socket.emit('joinError', { message: 'Sign in to play for coins.' }); return; }
+    try{
+      matchmakingQueue.join(clientId, nameFrom(payload), socket.id, avatarFrom(payload), presenceUserId, payload && payload.tier);
+    }catch(e){
+      socket.emit('joinError', { message: e.message });
+    }
   });
 
   socket.on('sendRoomChat', function(payload){

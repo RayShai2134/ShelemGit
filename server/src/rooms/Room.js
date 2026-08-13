@@ -116,10 +116,11 @@ Room.prototype._chargeEntryFee = async function(fee){
   }
 };
 
-/* Private rooms (host-started) must pick one of the fixed wager tiers —
- * there's no free option, the whole point is to get people buying coins.
- * Public matchmaking auto-starts with no fee-selection step yet, so it
- * stays free-to-play for now rather than guessing a tier for players. */
+/* Both private rooms (host-started) and public matchmaking (auto-started,
+ * once the queue for a tier fills or times out) must supply one of the
+ * fixed wager tiers — there's no free option, the whole point is to get
+ * people buying coins. Matchmaking validates the tier again on join (each
+ * queue is per-tier), so by the time this runs it's already trustworthy. */
 Room.prototype.startGame = async function(requestingSeat, targetScore, entryFee){
   if(this.roomPhase!==ROOM_PHASES.WAITING) throw new Error('game already started');
   if(requestingSeat!==this.hostSeat) throw new Error('only the host can start the game');
@@ -127,13 +128,9 @@ Room.prototype.startGame = async function(requestingSeat, targetScore, entryFee)
   var isValidCustom = typeof targetScore==='number' && targetScore>=50 && targetScore<=100000 && targetScore%5===0;
   this.targetScore = (VALID_TARGET_SCORES.indexOf(targetScore)!==-1 || isValidCustom) ? targetScore : 500;
 
-  var fee = 0;
-  var payingUserIds = [];
-  if(!this.isMatchmade){
-    if(WagerTiers.TIERS.indexOf(entryFee)===-1) throw new Error('Choose a buy-in to start.');
-    fee = entryFee;
-    payingUserIds = await this._chargeEntryFee(fee);
-  }
+  if(WagerTiers.TIERS.indexOf(entryFee)===-1) throw new Error('Choose a buy-in to start.');
+  var fee = entryFee;
+  var payingUserIds = await this._chargeEntryFee(fee);
   this.entryFee = fee;
   this.pot = fee * payingUserIds.length;
   this.payingUserIds = payingUserIds;

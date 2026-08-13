@@ -28,7 +28,7 @@ var Network = (function(){
 
   function createRoom(){ connect(); socket.emit('createRoom', { name: profile.name, avatar: myAvatar() }); }
   function joinRoom(code){ connect(); socket.emit('joinRoom', { roomCode: code, name: profile.name, avatar: myAvatar() }); }
-  function joinMatchmaking(){ connect(); socket.emit('joinMatchmaking', { name: profile.name, avatar: myAvatar() }); }
+  function joinMatchmaking(tier){ connect(); socket.emit('joinMatchmaking', { name: profile.name, avatar: myAvatar(), tier: tier }); }
   function leaveMatchmaking(){ socket && socket.emit('leaveMatchmaking'); }
   function chooseSeat(targetSeat){ socket && socket.emit('chooseSeat', { targetSeat: targetSeat }); }
   function startGame(targetScore, entryFee){ socket && socket.emit('startGame', { targetScore: targetScore, entryFee: entryFee }); }
