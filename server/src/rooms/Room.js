@@ -1,4 +1,5 @@
 var ShelemEngine = require('../../../shared/shelem-engine.js');
+var WagerTiers = require('../../../shared/wagerTiers.js');
 var buildStateForSeat = require('../net/stateSerializer.js');
 var pool = require('../db/pool.js');
 
@@ -84,10 +85,10 @@ Room.prototype.fillWithBots = function(requestingSeat){
 
 var VALID_TARGET_SCORES = [250, 500, 750, 1000];
 
-/* Charges a flat entry fee to every human seat, atomically. Consumed —
- * never redistributed to a winner (confirmed decision: this is a cost to
- * play, not a wager between players). Throws (and charges nobody) if any
- * human seat is a guest (no linked account) or can't afford it. */
+/* Charges a flat entry fee to every human seat, atomically, and returns the
+ * list of userIds actually charged (bots don't pay — the pot is only ever
+ * as big as what the charged humans put in). Throws (and charges nobody) if
+ * any human seat is a guest (no linked account) or can't afford it. */
 Room.prototype._chargeEntryFee = async function(fee){
   var humanSeats = this.seats.filter(function(s){ return s && s.type==='human'; });
   var missingAccount = humanSeats.filter(function(s){ return !s.userId; })[0];
@@ -106,6 +107,7 @@ Room.prototype._chargeEntryFee = async function(fee){
     }
     await client.query('UPDATE users SET coins = coins - $1 WHERE id = ANY($2)', [fee, userIds]);
     await client.query('COMMIT');
+    return userIds;
   }catch(e){
     await client.query('ROLLBACK').catch(function(){});
     throw e;
@@ -114,6 +116,10 @@ Room.prototype._chargeEntryFee = async function(fee){
   }
 };
 
+/* Private rooms (host-started) must pick one of the fixed wager tiers —
+ * there's no free option, the whole point is to get people buying coins.
+ * Public matchmaking auto-starts with no fee-selection step yet, so it
+ * stays free-to-play for now rather than guessing a tier for players. */
 Room.prototype.startGame = async function(requestingSeat, targetScore, entryFee){
   if(this.roomPhase!==ROOM_PHASES.WAITING) throw new Error('game already started');
   if(requestingSeat!==this.hostSeat) throw new Error('only the host can start the game');
@@ -121,9 +127,17 @@ Room.prototype.startGame = async function(requestingSeat, targetScore, entryFee)
   var isValidCustom = typeof targetScore==='number' && targetScore>=50 && targetScore<=100000 && targetScore%5===0;
   this.targetScore = (VALID_TARGET_SCORES.indexOf(targetScore)!==-1 || isValidCustom) ? targetScore : 500;
 
-  var fee = (typeof entryFee==='number' && Number.isInteger(entryFee) && entryFee>0 && entryFee<=100000) ? entryFee : 0;
-  if(fee>0) await this._chargeEntryFee(fee);
+  var fee = 0;
+  var payingUserIds = [];
+  if(!this.isMatchmade){
+    if(WagerTiers.TIERS.indexOf(entryFee)===-1) throw new Error('Choose a buy-in to start.');
+    fee = entryFee;
+    payingUserIds = await this._chargeEntryFee(fee);
+  }
   this.entryFee = fee;
+  this.pot = fee * payingUserIds.length;
+  this.payingUserIds = payingUserIds;
+  this.potSettled = false;
 
   var names = this.seats.map(function(s){ return s.name; });
   this.game = new ShelemEngine.ShelemGame(names, { targetScore: this.targetScore, direction: 1 });
@@ -147,6 +161,31 @@ Room.prototype.recordStatsIfComplete = function(){
       [won ? 1 : 0, seat.userId]
     ).catch(function(e){ console.error('[stats] failed to record for user', seat.userId, e.message); });
   });
+};
+
+/* Pays out the pot once a wagered game finishes: 95% split evenly among the
+ * winning team's human seats, 5% kept as the house cut (never credited to
+ * anyone). If the winning team has no paying humans (e.g. bots won), the pot
+ * is simply not paid out — there's no one to pay. Fire-and-forget like stats. */
+Room.prototype.payOutPotIfComplete = function(){
+  var self = this;
+  if(!this.game || this.game.phase!==ShelemEngine.PHASES.GAME_COMPLETE) return;
+  if(this.potSettled) return;
+  this.potSettled = true;
+  if(!this.pot || this.pot<=0) return;
+  var winningTeam = this.game.gameWinner;
+  var winningUserIds = [];
+  this.seats.forEach(function(seat, idx){
+    if(seat && seat.type==='human' && seat.userId && ShelemEngine.teamOf(idx)===winningTeam){
+      winningUserIds.push(seat.userId);
+    }
+  });
+  if(winningUserIds.length===0) return;
+  var totalPayout = Math.floor(this.pot * WagerTiers.POT_SHARE);
+  var share = Math.floor(totalPayout / winningUserIds.length);
+  if(share<=0) return;
+  pool.query('UPDATE users SET coins = coins + $1 WHERE id = ANY($2)', [share, winningUserIds])
+    .catch(function(e){ console.error('[wager] payout failed for room', self.code, e.message); });
 };
 
 /* If it's currently a bot seat's turn, plays that bot's move after a short
@@ -200,6 +239,13 @@ Room.prototype.applyAction = function(seat, action){
     case 'newGame':
       this.game = new ShelemEngine.ShelemGame(this.seats.map(function(s){ return s.name; }), { targetScore: this.targetScore || 500, direction: 1 });
       this.statsRecorded = false;
+      // Rematches don't re-run the buy-in flow, so they're free — leaving the
+      // old entryFee/pot in place would either double-pay the prior winners
+      // or charge nobody for a game the server still thinks is wagered.
+      this.entryFee = 0;
+      this.pot = 0;
+      this.payingUserIds = [];
+      this.potSettled = false;
       break;
     default: throw new Error('unknown action type: ' + action.type);
   }
@@ -212,6 +258,7 @@ Room.prototype.roomUpdatePayload = function(){
     hostSeat: this.hostSeat,
     matchmaking: this.isMatchmade,
     entryFee: this.entryFee || 0,
+    pot: this.pot || 0,
     seats: this.seats.map(function(s){
       return s ? { name: s.name, type: s.type, connected: s.connected, avatar: s.avatar } : null;
     })
@@ -226,6 +273,7 @@ Room.prototype.broadcastState = function(){
   var self = this;
   if(!this.game) return;
   this.recordStatsIfComplete();
+  this.payOutPotIfComplete();
   var players = this.seats.map(function(s){ return s ? s.name : ''; });
   var avatars = this.seats.map(function(s){ return s ? (s.avatar || '🤖') : ''; });
   this.seats.forEach(function(seat, idx){

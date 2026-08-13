@@ -155,20 +155,37 @@ function renderWaitingRoom(payload){
     feeLabel.style.cssText = 'font-size:12px;margin:6px 0 4px;';
     feeLabel.textContent = t('entryFeeLabel');
     hostControls.appendChild(feeLabel);
-    var feeInput = document.createElement('input');
-    feeInput.type = 'text';
-    feeInput.inputMode = 'numeric';
-    feeInput.id = 'wr-entry-fee-input';
-    feeInput.placeholder = t('entryFeePlaceholder');
-    feeInput.style.marginBottom = '10px';
-    hostControls.appendChild(feeInput);
+    var tierWrap = document.createElement('div');
+    tierWrap.id = 'wr-wager-tiers';
+    tierWrap.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-bottom:10px;';
+    var chosenTier = null;
+    WagerTiers.TIERS.forEach(function(tier){
+      var tierBtn = document.createElement('button');
+      tierBtn.className = 'wager-tier-choice';
+      tierBtn.style.cssText = 'width:100%;text-align:left;padding:8px 12px;';
+      tierBtn.innerHTML = t('wagerTierLabel', tier, WagerTiers.maxPayoutPerWinner(tier));
+      tierBtn.onclick = function(){
+        chosenTier = tier;
+        tierWrap.querySelectorAll('.wager-tier-choice').forEach(function(b){
+          b.classList.remove('active');
+          b.style.background = 'transparent';
+          b.style.color = 'var(--gold-bright)';
+        });
+        tierBtn.classList.add('active');
+        tierBtn.style.background = 'var(--gold)';
+        tierBtn.style.color = '#3a2e05';
+        startBtn.disabled = !isFull;
+      };
+      tierWrap.appendChild(tierBtn);
+    });
+    hostControls.appendChild(tierWrap);
     var startBtn = document.createElement('button');
     startBtn.className = 'primary';
     startBtn.textContent = t('startGame');
-    startBtn.disabled = !isFull;
+    startBtn.disabled = true;
     startBtn.onclick = function(){
-      var fee = parseInt(feeInput.value, 10);
-      Network.startGame(profile.targetScore || 500, (!isNaN(fee) && fee>0) ? fee : 0);
+      if(!chosenTier){ showToast(t('mustPickWager')); return; }
+      Network.startGame(profile.targetScore || 500, chosenTier);
     };
     hostControls.appendChild(startBtn);
   } else {
