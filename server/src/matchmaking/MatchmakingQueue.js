@@ -1,7 +1,7 @@
 var WagerTiers = require('../../../shared/wagerTiers.js');
 
 var GROUP_SIZE = 4;
-var TIMEOUT_MS = 20000;
+var TIMEOUT_MS = 3 * 60 * 1000;
 
 /* Public "Play online" queue. Players choose a wager tier before joining —
  * each tier runs its own independent queue, so a room only ever forms
@@ -23,7 +23,7 @@ function MatchmakingQueue(roomManager, registry, io){
 }
 
 MatchmakingQueue.prototype.join = function(clientId, name, socketId, avatar, userId, tier){
-  if(WagerTiers.TIERS.indexOf(tier)===-1) throw new Error('Choose a buy-in to find a match.');
+  if(WagerTiers.MATCHMAKING_TIERS.indexOf(tier)===-1) throw new Error('Choose a buy-in to find a match.');
   this.leave(socketId); // guard against double-join from the same socket (any tier)
   var queue = this.waitingByTier[tier] || (this.waitingByTier[tier] = []);
   queue.push({ clientId: clientId, name: name, socketId: socketId, avatar: avatar, userId: userId });

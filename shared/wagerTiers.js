@@ -6,9 +6,16 @@
   }
 })(typeof self!=='undefined' ? self : this, function(){
 
-// Fixed buy-in tiers for online games — players choose one, never a custom
-// amount, so the client can show the exact payout for each option up front.
+// Fixed buy-in tiers for "Play vs friends" private rooms — players choose
+// one, never a custom amount, so the client can show the exact payout for
+// each option up front.
 var TIERS = [20, 50, 100, 200, 500, 1000];
+
+// Public matchmaking uses a smaller set of tiers than private rooms — each
+// tier is its own separate queue (never mixed together, since that lets a
+// low-tier player siphon a higher-tier player's stake), so fewer tiers keeps
+// each individual queue from being too thin to fill.
+var MATCHMAKING_TIERS = [20, 100, 500];
 
 // Winning team splits this fraction of the pot; the rest is the house's cut
 // and isn't credited to anyone.
@@ -25,6 +32,7 @@ function maxPayoutPerWinner(fee){
 
 return {
   TIERS: TIERS,
+  MATCHMAKING_TIERS: MATCHMAKING_TIERS,
   POT_SHARE: POT_SHARE,
   maxPayoutPerWinner: maxPayoutPerWinner
 };

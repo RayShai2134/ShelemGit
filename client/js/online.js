@@ -97,7 +97,7 @@ function openMatchmakingModal(){
     if(val.length>0 && val!==profile.name){ profile.name = val; saveProfile(); }
   };
   var tierWrap = document.getElementById('mm-wager-tiers');
-  WagerTiers.TIERS.forEach(function(tier){
+  WagerTiers.MATCHMAKING_TIERS.forEach(function(tier){
     var btn = document.createElement('button');
     btn.style.cssText = 'width:100%;text-align:left;padding:8px 12px;';
     btn.innerHTML = t('wagerTierLabel', tier, WagerTiers.maxPayoutPerWinner(tier));
