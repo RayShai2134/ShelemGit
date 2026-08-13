@@ -27,7 +27,6 @@ router.post('/coins/checkout', authMiddleware.requireAuth, async function(req, r
     var origin = req.headers.origin || (req.protocol + '://' + req.get('host'));
     var session = await stripe.checkout.sessions.create({
       mode: 'payment',
-      payment_method_types: ['card'],
       line_items: [{
         price_data: {
           currency: 'usd',
