@@ -27,6 +27,9 @@ router.post('/coins/checkout', authMiddleware.requireAuth, async function(req, r
     var origin = req.headers.origin || (req.protocol + '://' + req.get('host'));
     var session = await stripe.checkout.sessions.create({
       mode: 'payment',
+      // Coins are virtual currency, not a taxable physical good — Managed
+      // Payments otherwise demands a product tax code we have no use for.
+      managed_payments: { enabled: false },
       line_items: [{
         price_data: {
           currency: 'usd',
