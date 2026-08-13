@@ -4,7 +4,7 @@
  */
 var AVATAR_OPTIONS = ['🦁','🐯','🦅','🐺','🦊','🐻','🐨','🦉','🐸','🦋'];
 
-var profile = { name:'Player', avatar:AVATAR_OPTIONS[0], unlockedAvatars:[], coins:500, targetScore:500, language:'en' };
+var profile = { name:'Player', avatar:AVATAR_OPTIONS[0], unlockedAvatars:[], coins:0, targetScore:500, language:'en' };
 var gameStarted = false;
 
 function loadProfile(){
@@ -18,7 +18,7 @@ function loadProfile(){
       if(typeof loaded.avatar==='string' && loaded.avatar) profile.avatar = loaded.avatar;
       else if(typeof loaded.avatarIndex==='number') profile.avatar = AVATAR_OPTIONS[loaded.avatarIndex] || AVATAR_OPTIONS[0];
       profile.unlockedAvatars = Array.isArray(loaded.unlockedAvatars) ? loaded.unlockedAvatars : [];
-      profile.coins = typeof loaded.coins==='number' ? loaded.coins : 500;
+      profile.coins = typeof loaded.coins==='number' ? loaded.coins : 0;
       profile.targetScore = typeof loaded.targetScore==='number' ? loaded.targetScore : 500;
       profile.language = (loaded.language==='fa') ? 'fa' : 'en';
     }

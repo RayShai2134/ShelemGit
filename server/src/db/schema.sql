@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash TEXT NOT NULL,
   display_name TEXT NOT NULL,
   avatar TEXT NOT NULL DEFAULT '🙂',
-  coins INTEGER NOT NULL DEFAULT 500,
+  coins INTEGER NOT NULL DEFAULT 50,
   target_score INTEGER NOT NULL DEFAULT 500,
   language TEXT NOT NULL DEFAULT 'en',
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -58,3 +58,9 @@ CREATE INDEX IF NOT EXISTS idx_coin_purchases_user ON coin_purchases(user_id);
 -- Cosmetic avatars bought with coins (not real money) — array of emoji this
 -- account owns beyond the free default set.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS unlocked_avatars TEXT[] NOT NULL DEFAULT '{}';
+
+-- New accounts start with a one-time 50-coin signup bonus, not 500 — the
+-- 500 default was only ever a placeholder from before real payments existed.
+-- Only changes the default applied to future signups; existing balances
+-- (including whatever a prior 500-coin default already granted) are untouched.
+ALTER TABLE users ALTER COLUMN coins SET DEFAULT 50;
